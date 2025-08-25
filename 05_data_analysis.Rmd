@@ -1,0 +1,162 @@
+# Diversity analysis
+```{r knitr_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=10, fig.height=7, fig.fullwidth=TRUE,
+fig.path='Figures/', warning=FALSE,
+message=FALSE)
+set.seed(1802)
+```
+
+```{r load_data_community}
+load("data/data_25082025.Rdata")
+load("data/25082025gifts.Rdata")
+```
+
+```{r data, comment="", message=FALSE, warning=FALSE, eval=FALSE}
+genome_counts_filt <- genome_counts_filt %>% 
+  column_to_rownames(var = "genome") %>%
+  select(-AC85) %>%
+  select(any_of(c("genome",intersect(sample_metadata$Tube_code, colnames(read_counts))))) %>%
+  filter(rowSums(. != 0, na.rm = TRUE) > 0)%>% 
+  select(where(~ sum(.) > 0)) %>% 
+  rownames_to_column(., "genome")
+
+genome_tree <- keep.tip(genome_tree, tip=genome_counts_filt$genome)
+
+table <- genome_counts_filt %>%
+  t() %>%
+  row_to_names(row_number = 1) %>% 
+  as.data.frame() %>% 
+  mutate_if(is.character,as.numeric) %>% 
+  rownames_to_column(., "sample")
+  
+master_table <- sample_metadata %>%
+  mutate(time_point = case_when(time_point %in% c("Transplant1") ~ "Donor1", TRUE ~ time_point)) %>%
+  mutate(time_point = case_when(time_point %in% c("Transplant2") ~ "Donor2", TRUE ~ time_point)) %>%
+  mutate(Population = case_when(Population %in% c("Cold_wet") ~ "Cold", TRUE ~ Population)) %>%
+  mutate(Population = case_when(Population %in% c("Hot_dry") ~ "Warm", TRUE ~ Population)) %>%
+  mutate(type = case_when(type %in% c("Hot_control") ~ "Warm_control", TRUE ~ type)) %>%
+  mutate(type = case_when(type %in% c("Control") ~ "Cold_control", TRUE ~ type)) %>%
+  mutate(type = case_when(type %in% c("Treatment") ~ "Cold_intervention", TRUE ~ type)) %>%
+  mutate(sample = Tube_code) %>%
+  mutate(Tube_code = str_remove_all(Tube_code, "_a")) %>%
+  filter(Tube_code %in% table$sample) %>%
+#  mutate(treatment = sub("^\\d+_", "", time_point)) %>%
+  left_join(., table, by = join_by("Tube_code" == "sample"))
+
+sample_metadata <- master_table %>% 
+  select(1,2,4:8,10,12)
+
+genome_counts_filt <- master_table %>% 
+  select(12,13:325) %>% 
+  t() %>%
+  row_to_names(row_number = 1) %>% 
+  as.data.frame() %>% 
+  mutate_if(is.character,as.numeric) %>% 
+  filter(rowSums(. != 0, na.rm = TRUE) > 0)%>%
+  dplyr::select(where(~ !all(. == 0)))%>% 
+  rownames_to_column(., "genome")
+
+genome_tree <- keep.tip(genome_tree, tip=genome_counts_filt$genome)
+
+genome_metadata <- genome_metadata %>% 
+  filter(genome %in% genome_counts_filt$genome)
+```
+
+```{r wrap_working_objects_2003, warning=FALSE, comments="", message=FALSE, eval=FALSE}
+save(sample_metadata, 
+     genome_metadata, 
+     genome_counts_filt, 
+     genome_tree,
+     phylum_colors,
+     data_stats,
+     genome_gifts,
+     master_table,
+     file = "data/objects_25082025.Rdata")
+```
+
+## Calculate diversities
+
+### Alpha diversity
+
+```{r alpha_div, comment="", message=FALSE, warning=FALSE, eval=FALSE}
+# Calculate Hill numbers
+richness <- genome_counts_filt %>%
+  column_to_rownames(var = "genome") %>%
+  dplyr::select(where(~ !all(. == 0))) %>%
+  hilldiv(., q = 0) %>%
+  t() %>%
+  as.data.frame() %>%
+  dplyr::rename(richness = 1) %>%
+  rownames_to_column(var = "sample")
+
+neutral <- genome_counts_filt %>%
+  column_to_rownames(var = "genome") %>%
+  dplyr::select(where(~ !all(. == 0))) %>%
+  hilldiv(., q = 1) %>%
+  t() %>%
+  as.data.frame() %>%
+  dplyr::rename(neutral = 1) %>%
+  rownames_to_column(var = "sample")
+
+phylogenetic <- genome_counts_filt %>%
+  column_to_rownames(var = "genome") %>%
+  dplyr::select(where(~ !all(. == 0))) %>%
+  hilldiv(., q = 1, tree = genome_tree) %>%
+  t() %>%
+  as.data.frame() %>%
+  dplyr::rename(phylogenetic = 1) %>%
+  rownames_to_column(var = "sample")
+
+genome_gifts1 <- genome_gifts[genome_counts_filt$genome,]
+genome_gifts1 <- genome_gifts1[, colSums(genome_gifts1 != 0) > 0]
+
+genome_counts_filt1 <- genome_counts_filt[genome_counts_filt$genome %in% rownames(genome_gifts1),]
+genome_counts_filt1 <- genome_counts_filt1 %>% 
+  remove_rownames() %>% 
+  column_to_rownames(var = "genome") %>% 
+      filter(rowSums(. != 0, na.rm = TRUE) > 0) %>% 
+  rownames_to_column(., "genome")
+
+# Merge all metrics
+alpha_div <- richness %>%
+  full_join(neutral, by = join_by(sample == sample)) %>%
+  full_join(phylogenetic, by = join_by(sample == sample))
+```
+
+```{r save_alpha, comment="", message=FALSE,warning=FALSE, eval=FALSE}
+save(alpha_div, 
+     file = "data/alpha_25082025.Rdata")
+```
+
+### Beta diversity
+
+```{r beta_div, comment="", message=FALSE, warning=FALSE, eval=FALSE}
+beta_q0n <- genome_counts_filt %>%
+  column_to_rownames(., "genome") %>%
+  filter(rowSums(. != 0, na.rm = TRUE) > 0) %>%
+  select_if(~!all(. == 0)) %>%
+  hillpair(., q = 0)
+
+beta_q1n <- genome_counts_filt %>%
+  column_to_rownames(., "genome") %>%
+  filter(rowSums(. != 0, na.rm = TRUE) > 0) %>%
+  select_if(~!all(. == 0)) %>%
+  hillpair(., q = 1)
+
+beta_q1p <- genome_counts_filt %>%
+  column_to_rownames(., "genome") %>%
+  filter(rowSums(. != 0, na.rm = TRUE) > 0) %>%
+  select_if(~!all(. == 0)) %>%
+  hillpair(., q = 1, tree = genome_tree)
+
+genome_gifts1 <- genome_gifts[genome_counts_filt$genome,]
+genome_gifts1 <- genome_gifts1[, colSums(genome_gifts1 != 0) > 0]
+genome_counts_filt1 <- genome_counts_filt[genome_counts_filt$genome %in% rownames(genome_gifts1),]
+```
+
+```{r save_beta, comment="", message=FALSE,warning=FALSE, eval=FALSE}
+save(beta_q0n, 
+     beta_q1n, 
+     beta_q1p, 
+     file = "data/beta_25082025.Rdata")
+```

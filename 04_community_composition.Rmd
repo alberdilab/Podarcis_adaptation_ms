@@ -1,0 +1,202 @@
+# Community composition
+
+```{r load_data_community}
+load("data/data_27022025.Rdata")
+```
+
+## Taxonomy overview 
+
+### Stacked barplot
+
+```{r taxonomy_barplot, warning=FALSE, fig.height=12, fig.width=20, fig.fullwidth=TRUE}
+# Merge data frames based on sample
+# transplants_metadata <- sample_metadata %>%
+#   mutate(Tube_code = str_remove_all(Tube_code, "_a"))
+# transplants_metadata$newID <- paste(transplants_metadata$Tube_code,
+#                                     "_",
+#                                     transplants_metadata$individual)
+
+merged_data <- genome_counts_filt %>%
+  mutate_at(vars(-genome),  ~ . / sum(.)) %>% #apply TSS normalisation
+  pivot_longer(-genome, names_to = "sample", values_to = "count") %>% #reduce to minimum number of columns
+  left_join(., genome_metadata, by = join_by(genome == genome)) %>% #append genome metadata
+  left_join(., sample_metadata, by = join_by(sample == Tube_code)) %>% #append sample metadata
+  filter(count > 0) #filter 0 counts
+
+ggplot(merged_data, aes(
+  x = sample,
+  y = count,
+  fill = phylum,
+  group = phylum
+)) + #grouping enables keeping the same sorting of taxonomic units
+  geom_bar(stat = "identity",
+           colour = "white",
+           linewidth = 0.1) + #plot stacked bars with white borders
+  scale_fill_manual(values = phylum_colors) +
+  facet_nested(. ~ time_point + type , scales = "free") + #facet per day and treatment
+  guides(fill = guide_legend(ncol = 1)) +
+  labs(fill = "Phylum", y = "Relative abundance", x = "Sample") +
+  theme(
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1,
+      size = 0
+    ),
+    strip.text.x = element_text(
+      size = 14,
+      colour = "black",
+      face = "bold"
+    ),
+    strip.background = element_rect(fill ="lightgrey"),
+    axis.title = element_text(size = 18, face = "bold"),
+    panel.background = element_blank(),
+    legend.title = element_text(size = 20, face = "bold"),
+    legend.text = element_text(size = 16)
+  )
+```
+
+#### Wild samples
+```{r taxonomy_barplot_wild, fig.height=8, fig.width=18, fig.fullwidth=TRUE, warning=FALSE}
+merged_data  %>%
+  filter(time_point=="Wild")  %>%
+  ggplot(aes(x=sample,y=count, fill=phylum, group=phylum)) + #grouping enables keeping the same sorting of taxonomic units
+    geom_bar(stat="identity", colour="white", linewidth=0.1) + #plot stacked bars with white borders
+    scale_fill_manual(values=phylum_colors) +
+    facet_nested(. ~ Population,  scales="free") + #facet per day and treatment
+    guides(fill = guide_legend(ncol = 1)) +
+    labs(fill="Phylum",y = "Relative abundance",x="Sample")+
+  theme(
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1,
+      size = 0
+    ),
+    strip.text.x = element_text(
+      size = 14,
+      colour = "black",
+      face = "bold"
+    ),
+    axis.title = element_text(size = 18, face = "bold"),
+    panel.background = element_blank(),
+    strip.background = element_rect(fill ="lightgrey"),
+    legend.title = element_text(size = 20, face = "bold"),
+    legend.text = element_text(size = 16)
+  )
+```
+
+### Phylum relative abundances
+```{r taxonomy_phylum_summary, warning=FALSE, comments="", message=FALSE}
+phylum_summary <- genome_counts_filt %>%
+  mutate_at(vars(-genome),~./sum(.)) %>% #apply TSS normalisation
+  pivot_longer(-genome, names_to = "sample", values_to = "count") %>%
+  left_join(sample_metadata, by = join_by(sample == Tube_code)) %>%
+  left_join(genome_metadata, by = join_by(genome == genome)) %>%
+  group_by(sample,phylum) %>%
+  summarise(relabun=sum(count))
+```
+
+#### Cold and wet population
+```{r taxonomy_phylum_summary_cold, warning=FALSE, comments="", message=FALSE}
+phylum_summary %>%
+    left_join(sample_metadata, by = join_by(sample == Tube_code))  %>%
+    group_by(phylum, Population) %>%
+    filter(Population=="Cold_wet" & time_point=="Wild") %>%
+    summarise(total_mean=mean(relabun*100, na.rm=T),
+              total_sd=sd(relabun*100, na.rm=T))  %>%
+  filter(total_mean!=0) %>% 
+    mutate(total=str_c(round(total_mean,2),"±",round(total_sd,2))) %>% 
+    arrange(-total_mean) %>% 
+    dplyr::select(phylum,total) %>% 
+    tt()
+```
+
+#### Hot and dry population
+```{r taxonomy_phylum_summary_hot, warning=FALSE, comments="", message=FALSE}
+phylum_summary %>%
+    left_join(sample_metadata, by = join_by(sample == Tube_code))  %>%
+    group_by(phylum, Population) %>%
+    filter(Population=="Hot_dry" & time_point=="Wild") %>%
+    summarise(total_mean=mean(relabun*100, na.rm=T),
+              total_sd=sd(relabun*100, na.rm=T))  %>%
+  filter(total_mean!=0) %>% 
+    mutate(total=str_c(round(total_mean,2),"±",round(total_sd,2))) %>% 
+    arrange(-total_mean) %>% 
+    dplyr::select(phylum,total) %>% 
+    tt()
+```
+
+
+## Taxonomy boxplot
+
+### Family
+```{r taxonomy_family_summary, warning=FALSE, comments="", message=FALSE}
+family_summary <- genome_counts_filt %>%
+  mutate_at(vars(-genome),~./sum(.)) %>% #apply TSS normalisation
+  pivot_longer(-genome, names_to = "sample", values_to = "count") %>% #reduce to minimum number of columns
+  left_join(sample_metadata, by = join_by(sample == Tube_code)) %>% #append sample metadata
+  left_join(., genome_metadata, by = join_by(genome == genome)) %>% #append genome metadata
+  group_by(sample,family) %>%
+  summarise(relabun=sum(count))
+```
+
+
+```{r taxonomy_jitterplot_family, warning=FALSE, comments="", message=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
+family_arrange <- family_summary %>%
+    group_by(family) %>%
+    summarise(mean=sum(relabun)) %>%
+    arrange(-mean) %>%
+    select(family) %>%
+    pull()
+
+family_summary %>%
+    left_join(genome_metadata %>% select(family,phylum) %>% unique(),by=join_by(family==family)) %>%
+    left_join(sample_metadata,by=join_by(sample==Tube_code)) %>%
+    filter(family %in% family_arrange[1:20]) %>%
+    mutate(family=factor(family,levels=rev(family_arrange[1:20]))) %>%
+    filter(relabun > 0) %>%
+    ggplot(aes(x=relabun, y=family, group=family, color=phylum)) +
+        scale_color_manual(values=phylum_colors[-8]) +
+        geom_jitter(alpha=0.5) + 
+        facet_grid(.~type)+
+        theme_minimal() + 
+        labs(y="Family", x="Relative abundance", color="Phylum")
+
+```
+
+### Genus
+```{r taxonomy_genus_summary, warning=FALSE, comments="", message=FALSE}
+genus_summary <- genome_counts_filt %>%
+  mutate_at(vars(-genome),~./sum(.)) %>% #apply TSS nornalisation
+  pivot_longer(-genome, names_to = "sample", values_to = "count") %>% #reduce to minimum number of columns
+  left_join(sample_metadata, by = join_by(sample == Tube_code)) %>% #append sample metadata
+  left_join(genome_metadata, by = join_by(genome == genome)) %>% #append genome metadata
+  group_by(sample,genus) %>%
+  summarise(relabun=sum(count)) %>%
+  filter(genus != "g__")
+```
+
+```{r taxonomy_jitterplot_genus, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
+genus_arrange <- genus_summary %>%
+    group_by(genus) %>%
+    summarise(mean=sum(relabun)) %>%
+    filter(genus != "g__")%>%
+    arrange(-mean) %>%
+    select(genus) %>%
+    mutate(genus= sub("^g__", "", genus)) %>%
+    pull()
+
+genus_summary %>%
+    left_join(genome_metadata %>% select(genus,phylum) %>% unique(),by=join_by(genus==genus)) %>%
+    left_join(sample_metadata,by=join_by(sample==Tube_code)) %>%
+    mutate(genus= sub("^g__", "", genus)) %>%
+    filter(genus %in% genus_arrange[1:20]) %>%
+    mutate(genus=factor(genus,levels=rev(genus_arrange[1:20]))) %>%
+    filter(relabun > 0) %>%
+    ggplot(aes(x=relabun, y=genus, group=genus, color=phylum)) +
+        scale_color_manual(values=phylum_colors[-c(3,4,6,8)]) +
+        geom_jitter(alpha=0.5) + 
+        facet_grid(.~type)+
+        theme_minimal() + 
+        labs(y="Genus", x="Relative abundance", color="Phylum")
+
+```
