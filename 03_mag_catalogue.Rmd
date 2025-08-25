@@ -151,7 +151,7 @@ cat(pred_genes)
 
 # Some annotation
 genome_annota <- genome_annotations %>%
-  filter(if_any(c(kegg_id, pfam_hits, cazy_hits), ~ !is.na(.))) %>%
+  filter(if_any(c(ko_id, pfam_hits, cazy_hits), ~ !is.na(.))) %>%
   nrow()
 
 cat(genome_annota)
@@ -164,7 +164,7 @@ genome_annota*100/pred_genes
 ```{r kegg_stats_gut, message=FALSE, warning=FALSE, fig.height=10, fig.width=10, fig.fullwidth=TRUE}
 # KEGG annotation
 kegg_annota <- genome_annotations %>%
-  filter(!is.na(kegg_id)) %>%
+  filter(!is.na(ko_id)) %>%
   nrow()
 cat(kegg_annota)
 
@@ -285,26 +285,3 @@ gift_pcoa_vectors %>%
     theme(legend.position = "none")
 ```
 
-
-
-
-```{r function_ordination, message=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
-# Generate the tSNE ordination
-tSNE_function <- Rtsne(X=function_table, dims = 2, check_duplicates = FALSE)
-
-# Plot the ordination
-function_ordination <- tSNE_function$Y %>%
-                as.data.frame() %>%
-                mutate(genome=rownames(function_table)) %>%
-                inner_join(genome_metadata, by="genome") %>%
-                rename(tSNE1="V1", tSNE2="V2") %>%
-                select(genome,phylum,tSNE1,tSNE2, length) %>%
-                ggplot(aes(x = tSNE1, y = tSNE2, color = phylum, size=length))+
-                            geom_point(shape=16, alpha=0.7) +
-                            scale_color_manual(values=phylum_colors) +
-                            theme_minimal() +
-                labs(color="Phylum", size="Genome size") +
-                guides(color = guide_legend(override.aes = list(size = 5))) # enlarge Phylum dots in legend
-
-function_ordination
-```

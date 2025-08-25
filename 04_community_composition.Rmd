@@ -1,7 +1,7 @@
 # Community composition
 
-```{r load_data_community}
-load("data/data_27022025.Rdata")
+```{r load_data_community_2}
+load("data/data_25082025.Rdata")
 ```
 
 ## Taxonomy overview 

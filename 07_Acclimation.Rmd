@@ -1,0 +1,479 @@
+# Do populations mantain a different GM after acclimation?
+```{r load_data_acclimation}
+load("data/data_25082025.Rdata")
+load("data/objects_25082025.Rdata")
+load("data/alpha_25082025.Rdata")
+load("data/beta_25082025.Rdata")
+```
+```{r knitr_options_acclim, include=FALSE}
+knitr::opts_chunk$set(fig.width=10, fig.height=7, fig.fullwidth=TRUE,
+fig.path='Figures/', warning=FALSE,
+message=FALSE)
+set.seed(2802)
+```
+
+## Shapiro test
+
+```{r shapiro_wild_accli, comment="", message=FALSE, warning=FALSE}
+alpha_div %>%
+  pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
+  left_join(., sample_metadata, by = join_by(sample == Tube_code)) %>%
+  filter(time_point =="Acclimation") %>% 
+  filter(metric=="richness") %>% 
+  summarize(shapiro_p_value = shapiro.test(value)$p.value) %>%
+  pull(shapiro_p_value)
+
+alpha_div %>%
+  pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
+  left_join(., sample_metadata, by = join_by(sample == Tube_code)) %>%
+  filter(time_point =="Acclimation") %>% 
+  filter(metric=="neutral") %>% 
+  summarize(shapiro_p_value = shapiro.test(value)$p.value) %>%
+  pull(shapiro_p_value)
+
+alpha_div %>%
+  pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
+  left_join(., sample_metadata, by = join_by(sample == Tube_code)) %>%
+  filter(time_point =="Acclimation") %>% 
+  filter(metric=="phylogenetic") %>% 
+  summarize(shapiro_p_value = shapiro.test(value)$p.value) %>%
+  pull(shapiro_p_value)
+```
+
+## Alpha diversity
+```{r alpha_div_plot_accli, comment="", message=FALSE, warning=FALSE, fig.height=4, fig.width=8, fig.fullwidth=TRUE}
+alpha_div %>%
+  pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
+  left_join(., sample_metadata, by = join_by(sample == Tube_code)) %>%
+  filter(time_point=="Acclimation") %>%
+  mutate(metric=factor(metric,levels=c("richness","neutral","phylogenetic"))) %>%
+      ggplot(aes(y = value, x = Population, group=Population, color=Population, fill=Population)) +
+      geom_boxplot(outlier.shape = NA) +
+      geom_jitter(alpha=0.5) +
+      scale_color_manual(name="Population",
+          breaks=c("Cold_wet","Hot_dry"),
+          labels=c("Cold","Hot"),
+          values=c('#008080', "#d57d2c")) +
+      scale_fill_manual(name="Population",
+          breaks=c("Cold_wet","Hot_dry"),
+          labels=c("Cold","Hot"),
+          values=c('#00808050', "#d57d2c50")) +
+      facet_wrap(. ~ metric,scales = "free") +
+      coord_cartesian(xlim = c(1, NA)) +
+      stat_compare_means(method="t.test",size=3, label.x=.58) +
+      theme_classic() +
+        theme(
+    strip.background = element_blank(),
+    panel.grid.minor.x = element_line(size = .1, color = "grey"),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size=10),
+    axis.text.x = element_blank(),
+    # Increase plot size
+    plot.title = element_text(size = 10),
+    axis.text = element_text(size = 8),
+    axis.title = element_text(size = 8)
+      ) +
+  ylab("Alpha diversity")
+```
+
+## Beta diversity
+
+Number of samples used
+```{r beta_div_neutral_accli_samples, message=FALSE, warning=FALSE, comments=FALSE}
+samples_to_keep_accli <- sample_metadata %>%
+  filter(time_point == "Acclimation") %>% 
+  select(Tube_code) %>% 
+  pull()
+subset_meta_accli <- sample_metadata %>%
+  filter(time_point == "Acclimation")
+
+length(samples_to_keep_accli)
+```
+
+***Richness***
+```{r beta_richness_permanova_1_accli, warning=FALSE, comments="", message=FALSE}
+richness_accli <- as.matrix(beta_q0n$S)
+richness_accli <- as.dist(richness_accli[rownames(richness_accli) %in% samples_to_keep_accli,
+               colnames(richness_accli) %in% samples_to_keep_accli])
+betadisper(richness_accli, subset_meta_accli$Population) %>% permutest(., pairwise = TRUE)
+```
+
+```{r beta_richness_permanova_accli, warning=FALSE, comments="", message=FALSE, results=TRUE}
+adonis2(richness_accli ~ Population,
+        data = subset_meta_accli %>% arrange(match(Tube_code,labels(richness_accli))),
+        permutations = 999) %>%
+        broom::tidy() %>%
+        tt()
+```
+
+***Neutral***
+```{r beta_neutral_permanova_1_acclim, warning=FALSE, comments="", message=FALSE}
+neutral_accli <- as.matrix(beta_q1n$S)
+neutral_accli <- as.dist(neutral_accli[rownames(neutral_accli) %in% samples_to_keep_accli,
+               colnames(neutral_accli) %in% samples_to_keep_accli])
+betadisper(neutral_accli, subset_meta_accli$Population) %>% permutest(., pairwise = TRUE)
+```
+
+```{r beta_neutral_permanova_acclimation, warning=FALSE, comments="", message=FALSE, results=TRUE}
+adonis2(neutral_accli ~ Population,
+        data = subset_meta_accli %>% arrange(match(Tube_code,labels(neutral_accli))),
+        permutations = 999) %>%
+        broom::tidy() %>%
+        tt()
+```
+
+***Phylogenetic***
+```{r beta_phylo_permanova_1_accli, warning=FALSE, comments="", message=FALSE}
+phylo_accli <- as.matrix(beta_q1p$S)
+phylo_accli <- as.dist(phylo_accli[rownames(phylo_accli) %in% samples_to_keep_accli,
+               colnames(phylo_accli) %in% samples_to_keep_accli])
+betadisper(phylo_accli, subset_meta_accli$Population) %>% permutest(., pairwise = TRUE)
+```
+
+```{r beta_phylo_permanova_accli, warning=FALSE, comments="", message=FALSE, results=TRUE}
+adonis2(phylo_accli ~ Population,
+        data = subset_meta_accli %>% arrange(match(Tube_code,labels(phylo_accli))),
+        permutations = 999) %>%
+        broom::tidy() %>%
+        tt()
+```
+
+***NMDS***
+```{r beta_neutral_nmds_accli, warning=FALSE, comments="", message=FALSE, results="hide"}
+richness_accli %>%
+  metaMDS(.,trymax = 500, k=2, verbosity=FALSE, trace=FALSE) %>%
+  vegan::scores() %>%
+  as_tibble(., rownames = "sample") %>%
+  left_join(subset_meta_accli, by = join_by(sample == Tube_code))%>%
+  group_by(Population) %>%
+  mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+  mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+  ungroup() %>%
+  ggplot(., aes(x=NMDS1,y=NMDS2, color=Population)) +
+  scale_color_manual(name="Population",
+                     breaks=c("Cold_wet","Hot_dry"),
+                     labels=c("Cold","Hot"),
+                     values=c('#008080',"#d57d2c")) +
+  scale_shape_manual(name="Type",
+                     breaks=c("Control", "Hot_control", "Treatment"),
+                     labels=c("Cold-Cold", "Hot-Hot", "Cold-Hot"),
+                     values=c("circle","square","triangle")) +
+  geom_point(size=2) +
+  geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
+  labs(y = "NMDS2", x="NMDS1 \n Richness beta diversity") +
+  theme_classic() +
+  theme(legend.position="none")
+
+neutral_accli %>%
+  metaMDS(.,trymax = 500, k=2, verbosity=FALSE, trace=FALSE) %>%
+  vegan::scores() %>%
+  as_tibble(., rownames = "sample") %>%
+  left_join(subset_meta_accli, by = join_by(sample == Tube_code))%>%
+  group_by(Population) %>%
+  mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+  mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+  ungroup() %>%
+  ggplot(., aes(x=NMDS1,y=NMDS2, color=Population, shape=type)) +
+  scale_color_manual(name="Population",
+                     breaks=c("Cold_wet","Hot_dry"),
+                     labels=c("Cold","Hot"),
+                     values=c('#008080',"#d57d2c")) +
+  scale_shape_manual(name="Type",
+                     breaks=c("Control", "Hot_control", "Treatment"),
+                     labels=c("Cold-Cold", "Hot-Hot", "Cold-Hot"),
+                     values=c("circle","square","triangle")) +
+  geom_point(size=2) +
+  geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
+  labs(y = "NMDS2", x="NMDS1 \n Neutral beta diversity") +
+  theme_classic() +
+  theme(legend.position="none")
+
+phylo_accli %>%
+  metaMDS(.,trymax = 500, k=2, verbosity=FALSE, trace=FALSE) %>%
+  vegan::scores() %>%
+  as_tibble(., rownames = "sample") %>%
+  left_join(subset_meta_accli, by = join_by(sample == Tube_code))%>%
+  group_by(Population) %>%
+  mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
+  mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
+  ungroup() %>%
+  ggplot(., aes(x=NMDS1,y=NMDS2, color=Population)) +
+  scale_color_manual(name="Population",
+                     breaks=c("Cold_wet","Hot_dry"),
+                     labels=c("Cold","Hot"),
+                     values=c('#008080',"#d57d2c")) +
+  scale_shape_manual(name="Type",
+                     breaks=c("Control", "Hot_control", "Treatment"),
+                     labels=c("Cold-Cold", "Hot-Hot", "Cold-Hot"),
+                     values=c("circle","square","triangle")) +
+  geom_point(size=2) +
+  geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
+  labs(y= element_blank (),x="NMDS1 \n Phylogenetic beta diversity") +
+  theme_classic() +
+  theme(legend.position="none") 
+```
+
+
+## Functional capacity
+### Metabolic capacity index at functional level
+
+```{r gitfs_elements_acclimation, warning=FALSE, comments="", message=FALSE}
+GIFTs_functions_community %>%
+  rowMeans() %>%
+  as_tibble(., rownames = "sample") %>%
+  left_join(sample_metadata, by = join_by(sample == Tube_code)) %>%
+  filter(time_point=="Acclimation") %>%
+  group_by(Population) %>%
+  summarise(MCI = mean(value), sd = sd(value))
+```
+```{r gitfs_functional_acclimation_3, warning=FALSE, comments="", message=FALSE}
+MCI_element_acclimation<- GIFTs_functions_community %>%
+  rowMeans() %>%
+  as_tibble(., rownames = "sample") %>%
+  left_join(sample_metadata, by = join_by(sample == Tube_code)) %>%
+  filter(time_point=="Acclimation")
+
+shapiro.test(MCI_element_acclimation$value) #normality test
+var.test(value ~ Population, data = MCI_element_acclimation)
+t.test(value ~ Population, data=MCI_element_acclimation, var.equal = TRUE)
+```
+
+### Differences in functional pathways
+```{r comunity_elem_acclimation, comment="", message=FALSE, warning=FALSE}
+element_gift_acclimation<- element_gift %>% 
+  filter(time_point=="Acclimation") %>% 
+  select(-time_point,-type) %>%
+  filter(rowSums(across(where(is.numeric), ~ . != 0)) > 0) %>%
+  select(Tube_code, where(~ is.numeric(.) && sum(.) > 0)) %>%
+  left_join(sample_metadata[c(1, 4)], by = "Tube_code")
+```
+
+```{r commun_wilcox_elem_acclimation, comment="", message=FALSE, warning=FALSE}
+significant_elements_acclimation <- element_gift_acclimation %>%
+  pivot_longer(-c(Tube_code,Population), names_to = "trait", values_to = "value") %>%
+  group_by(trait) %>%
+  summarise(p_value = wilcox.test(value ~ Population)$p.value) %>%
+  mutate(p_adjust=p.adjust(p_value, method="BH")) %>%
+  filter(p_adjust < 0.05)%>%
+  rownames_to_column(., "Elements")  %>% 
+  select(-Elements)
+
+element_gift_sig_acclimation <- element_gift_acclimation %>%
+  select(Tube_code, all_of(intersect(
+    significant_elements_acclimation$trait,
+    colnames(element_gift_acclimation)
+  ))) %>%
+  left_join(., sample_metadata[c(1, 4)], by = join_by(Tube_code == Tube_code))
+
+difference_table_acclimation <- element_gift_sig_acclimation %>%
+  select(-Tube_code) %>%
+  group_by(Population) %>%
+  summarise(across(everything(), mean)) %>%
+  t() %>%
+  row_to_names(row_number = 1) %>%
+  as.data.frame() %>%
+  mutate_if(is.character, as.numeric) %>%
+  rownames_to_column(., "Elements") %>%
+  left_join(.,uniqueGIFT_db[c(1,3,4)],by = join_by(Elements == Code_element)) %>% 
+  arrange(Function) %>% 
+  mutate(Difference=Cold_wet-Hot_dry)%>% 
+  mutate(group_color = ifelse(Difference <0, "Hot","Cold")) 
+```
+
+```{r commun_wilcox_elem_plot_acclimation, comment="", message=FALSE, warning=FALSE, fig.height=6, fig.width=12, fig.fullwidth=TRUE}
+difference_table_acclimation %>%
+  ggplot(aes(x=forcats::fct_reorder(Function,Difference), y=Difference, fill=group_color)) + 
+  geom_col() +
+  scale_fill_manual(values=c('#008080',"#d57d2c")) + 
+  geom_hline(yintercept=0) + 
+  coord_flip()+
+  theme(axis.text = element_text(size = 10),
+        axis.title = element_text(size = 12),
+        legend.position = "right", 
+        legend.title = element_blank(),
+        panel.background = element_blank(),
+        panel.grid.major = element_line(size = 0.15, linetype = 'solid',
+                                        colour = "grey"))+
+  xlab("Function") + 
+  ylab("Mean difference")
+```
+
+
+```{r struct_zero_ci_accli_fmt1, comment="", echo=FALSE, message=FALSE, warning=FALSE}
+accli_ci_samples <- sample_metadata %>% 
+  filter(Population == "Cold_wet") %>% 
+  filter(time_point == "Acclimation") %>%
+  dplyr::select("Tube_code") %>%
+  pull()
+
+fmt1_ci_samples <- sample_metadata %>% 
+  filter(Population == "Hot_dry") %>% 
+  filter(time_point == "Acclimation")%>%
+  dplyr::select("Tube_code") %>%
+  pull()
+
+meta_accli_ <- sample_metadata%>% 
+  filter(Population %in% c("Cold_wet", "Hot_dry") & time_point == "Acclimation")
+
+structural_zeros <- genome_counts_filt %>%
+  select(c("genome", meta_accli_$Tube_code)) %>%
+  filter(rowSums(across(where(is.numeric)))!=0) %>% 
+  rowwise() %>%
+  mutate(all_zeros_accli_ci = all(c_across(all_of(accli_ci_samples)) == 0)) %>% # set true if all samples in warm have zeros
+  mutate(all_zeros_ci_fmt1 = all(c_across(all_of(fmt1_ci_samples)) == 0)) %>% # set true if all samples in treatment have zeros
+  mutate(average_accli_ci = mean(c_across(all_of(accli_ci_samples)), na.rm = TRUE)) %>% # get average genome counts across accli
+  mutate(average_ci_fmt1 = mean(c_across(all_of(fmt1_ci_samples)), na.rm = TRUE)) %>% # get average genome counts across post2
+  filter(all_zeros_accli_ci == TRUE | all_zeros_ci_fmt1 == TRUE)  %>% # filter only genomes with structural zeros
+  mutate(present = case_when(all_zeros_accli_ci & !all_zeros_ci_fmt1 ~ "Hot_dry",!all_zeros_accli_ci & all_zeros_ci_fmt1 ~ "Cold_wet",!all_zeros_accli_ci & !all_zeros_ci_fmt1 ~ "None",TRUE ~ NA_character_)) %>%
+  mutate(average = ifelse(present == "Cold_wet", average_accli_ci, average_ci_fmt1)) %>%
+  dplyr::select(genome, present, average) %>%
+  left_join(genome_metadata, by = join_by(genome == genome)) %>%
+  arrange(present, -average)
+
+```
+
+```{r structural_zeros_acci_fmt1_ci}
+struc <- structural_zeros %>% 
+  filter(present=="Cold_wet")%>% 
+  count(phylum, name = "Cold_wet") %>%
+  arrange(desc(Cold_wet))
+structural_zeros %>% 
+  filter(present=="Hot_dry")%>% 
+  count(phylum, name = "Hot_dry") %>%
+  arrange(desc(Hot_dry)) %>% 
+  full_join(., struc, by="phylum") %>%
+  mutate(across(everything(), ~ ifelse(is.na(.), 0, .))) %>% 
+  tt()
+```
+
+```{r structural_zeros_acci_fmt1_ci_1}
+
+phylo_samples <- sample_metadata %>%
+  filter(time_point == "Acclimation" )%>% 
+  column_to_rownames("Tube_code") %>% 
+  sample_data()
+phylo_genome <- genome_counts_filt %>% 
+  filter(!genome %in% structural_zeros$genome) %>% 
+  select(one_of(c("genome",rownames(phylo_samples)))) %>%
+  filter(rowSums(across(where(is.numeric), ~ . != 0)) > 0) %>%
+  select(genome, where(~ is.numeric(.) && sum(.) > 0)) %>%
+  filter(genome!="AH1_2nd_20:bin_000042")%>%
+  filter(genome!="LI1_2nd_7:bin_000012")%>%
+  column_to_rownames("genome") %>% 
+  otu_table(., taxa_are_rows = TRUE)
+phylo_taxonomy <- genome_metadata %>% 
+  filter(genome %in% rownames(phylo_genome)) %>% 
+  column_to_rownames("genome") %>% 
+  dplyr::select(domain,phylum,class,order,family,genus,species) %>% 
+  as.matrix() %>% 
+  tax_table()
+
+physeq_genome_filtered <- phyloseq(phylo_genome, phylo_taxonomy, phylo_samples)
+```
+
+```{r ancom_rand_pond_accli_fmt1_ci, comment="", message=FALSE, warning=FALSE, eval=FALSE}
+ancom_rand_output_accli = ancombc2(data = physeq_genome_filtered, 
+                  assay_name = "counts", 
+                  tax_level = NULL,
+                  fix_formula = "Population", 
+                  p_adj_method = "holm", 
+                  pseudo_sens = TRUE,
+                  prv_cut =0, 
+                  lib_cut = 0, 
+                  s0_perc = 0.05,
+                  group = "Population", 
+                  struc_zero = TRUE, 
+                  neg_lb = FALSE,
+                  alpha = 0.05, 
+                  n_cl = 2, 
+                  verbose = TRUE,
+                  global = FALSE, 
+                  pairwise = FALSE, 
+                  dunnet = FALSE, 
+                  trend = FALSE,
+                  iter_control = list(tol = 1e-5, max_iter = 20, verbose = FALSE),
+                  em_control = list(tol = 1e-5, max_iter = 100),
+                  mdfdr_control = list(fwer_ctrl_method = "holm", B = 100), 
+                  trend_control = NULL)
+
+```
+
+```{r 4, eval=FALSE }
+save(ancom_rand_output_ci_accli_fmt1, file="data/ancom_rand_output_ci_accli_fmt1.RData")
+```
+
+```{r 5_1, eval=TRUE}
+load("data/ancom_rand_output_ci_accli_fmt1.RData")
+```
+```{r accli_fmt_ci_data}
+ancom_rand_output_ci_accli_fmt1$res %>%
+  dplyr::select(taxon, lfc_time_pointFMT1, p_time_pointFMT1) %>%
+  filter(p_time_pointFMT1 < 0.05) %>% 
+  left_join(., genome_metadata, by=join_by("taxon"=="genome")) %>% 
+  select(2,3,7,8,9) %>% 
+  tt()  
+```
+
+```{r ancom_rand_FMT1_accli_ci, comment="", echo=TRUE, message=FALSE, warning=FALSE}
+taxonomy <- data.frame(physeq_genome_filtered@tax_table) %>%
+  rownames_to_column(., "taxon") %>%
+  mutate_at(vars(order, phylum, family, genus, species), ~ str_replace(., "[dpcofgs]__", ""))
+
+ancombc_rand_table_mag <- ancom_rand_output_ci_accli_fmt1$res %>%
+  dplyr::select(taxon, lfc_time_pointFMT1, p_time_pointFMT1) %>%
+  #filter(p_time_pointFMT1 < 0.05) %>%
+  dplyr::arrange(p_time_pointFMT1) %>%
+  merge(., taxonomy, by="taxon") %>%
+  mutate_at(vars(phylum, species), ~ str_replace(., "[dpcofgs]__", ""))%>%
+  dplyr::arrange(lfc_time_pointFMT1)
+
+ancombc_rand_table_mag
+  
+colors_alphabetic <- read_tsv("https://raw.githubusercontent.com/earthhologenome/EHI_taxonomy_colour/main/ehi_phylum_colors.tsv") %>%
+  mutate_at(vars(phylum), ~ str_replace(., "[dpcofgs]__", ""))  %>%
+  right_join(taxonomy, by=join_by(phylum == phylum)) %>%
+  dplyr::select(phylum, colors) %>%
+  mutate(colors = str_c(colors, "80"))  %>% #add 80% alpha
+	unique() %>%
+	dplyr::arrange(phylum)
+
+tax_table <- as.data.frame(unique(ancombc_rand_table_mag$phylum))
+  
+colnames(tax_table)[1] <- "phylum"
+tax_color <- merge(tax_table, colors_alphabetic, by="phylum")%>%
+	dplyr::arrange(phylum) %>%
+	dplyr::select(colors) %>%
+	pull()
+```
+
+```{r ancombc_rand_plot_phy_FMT1_accli_ci, comment="", echo=TRUE, message=FALSE, warning=FALSE, fig.height=5, fig.width=6, fig.fullwidth=TRUE}
+ancombc_rand_table_mag %>%
+  mutate(
+    genome = factor(taxon, levels = ancombc_rand_table_mag$taxon),
+    significance = ifelse(p_time_pointFMT1 < 0.05, phylum, NA)  # Set non-significant to NA (not mapped in legend)
+  ) %>%
+  ggplot() +
+  # Plot significant points with legend
+  geom_point(aes(x = lfc_time_pointFMT1, y = -log10(p_time_pointFMT1), color = significance), 
+             size = 3, alpha = 0.7, na.rm = TRUE) +  
+  # Plot non-significant points separately without legend
+  geom_point(data = filter(ancombc_rand_table_mag, p_time_pointFMT1 >= 0.05),
+             aes(x = lfc_time_pointFMT1, y = -log10(p_time_pointFMT1)), 
+             color = "grey70", size = 3, alpha = 0.7, show.legend = FALSE) +
+  scale_color_manual(
+    values = tax_color,  # Only keeps phylum colors in legend
+    na.translate = FALSE  # Removes NA (non-significant) from legend
+  ) + 
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed") +  
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  scale_y_continuous(limits = c(0, 10)) +  
+  xlab("log2FoldChange") + 
+  ylab("-log10(p-value)") +
+  guides(color = guide_legend(title = "Phylum")) +  
+  theme_minimal()+ 
+  annotate("text", x = min(ancombc_rand_table_mag$lfc_time_pointFMT1), y = 3, 
+           label = "FMT1", hjust = 0, size = 4, fontface = "bold") +
+  annotate("text", x = max(ancombc_rand_table_mag$lfc_time_pointFMT1), y = 3, 
+           label = "Acclimation", hjust = 1, size = 4, fontface = "bold")
+
+```
