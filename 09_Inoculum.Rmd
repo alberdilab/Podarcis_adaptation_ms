@@ -1,4 +1,4 @@
-# Are the microbial communities similar in both donor samples?
+# Does the donor sample maintain the microbial community found in acclimation?
 ```{r data_donor, comment="", message=FALSE, warning=FALSE, echo=FALSE}
 load("data/data_25082025.Rdata")
 load("data/objects_25082025.Rdata")
@@ -6,7 +6,6 @@ load("data/alpha_25082025.Rdata")
 load("data/beta_25082025.Rdata")
 ```
 
-# Does the donor sample maintain the microbial community found in acclimation?
 ```{r filter_data_donor2, comment="", message=FALSE, warning=FALSE}
 sample_metadata <- sample_metadata %>%
   mutate(treatment=time_point) %>% 

@@ -74,7 +74,7 @@ alpha_div %>%
   left_join(., sample_metadata, by = "sample") %>%
   mutate(metric = factor(metric, levels = c("richness", "neutral", "phylogenetic")),
   time_point = factor(time_point, levels = c("Wild", "Acclimation"))) %>%
-  filter(time_point %in% c("Wild", "Acclimation")) %>% 
+  filter(time_point %in% c("Acclimation", "Antibiotics")) %>% 
   ggplot(aes(y = value, x = time_point, color=Population, fill=Population)) +
   geom_boxplot(width = 0.5,alpha=0.5, outlier.shape = NA, show.legend = FALSE) +
   geom_jitter(width = 0.2,show.legend = FALSE) +
@@ -1133,7 +1133,7 @@ difference_table%>%
 
 ## Alpha diversity
 
-****Shapiro test***
+***Shapiro test***
 ```{r shapiro_antib_1, comment="", message=FALSE, warning=FALSE}
 alpha_div %>%
   pivot_longer(-sample, names_to = "metric", values_to = "value") %>%

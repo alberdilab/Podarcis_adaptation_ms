@@ -44,7 +44,7 @@ upset(as.data.frame(table_upset_analysis),
 alpha_div %>%
   pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
   left_join(., sample_metadata, by = join_by(sample == Tube_code)) %>%
-  filter(time_point =="Acclimation"| time_point == "Wild") %>% 
+  filter(time_point == "Wild") %>% 
   filter(metric=="richness") %>% 
   summarize(shapiro_p_value = shapiro.test(value)$p.value) %>%
   pull(shapiro_p_value)
@@ -52,7 +52,7 @@ alpha_div %>%
 alpha_div %>%
   pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
   left_join(., sample_metadata, by = join_by(sample == Tube_code)) %>%
-  filter(time_point =="Acclimation"| time_point == "Wild") %>% 
+  filter(time_point == "Wild") %>% 
   filter(metric=="neutral") %>% 
   summarize(shapiro_p_value = shapiro.test(value)$p.value) %>%
   pull(shapiro_p_value)
@@ -60,7 +60,7 @@ alpha_div %>%
 alpha_div %>%
   pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
   left_join(., sample_metadata, by = join_by(sample == Tube_code)) %>%
-  filter(time_point =="Acclimation"| time_point == "Wild") %>% 
+  filter(time_point == "Wild") %>% 
   filter(metric=="phylogenetic") %>% 
   summarize(shapiro_p_value = shapiro.test(value)$p.value) %>%
   pull(shapiro_p_value)
@@ -218,7 +218,7 @@ richness %>%
                     labels=c("Cold","Warm"),
                     values=c('#008080',"#d57d2c")) +
         scale_shape_manual(name="Type",
-                           breaks=c("Control", "Hot_control", "Treatment"),
+                           breaks=c("Cold_control", "Warm_control", "Cold-intervention"),
                            labels=c("Cold-Control", "Warm-Control", "Cold-Intervention"),
                          values=c("circle","square","triangle")) +
 				geom_point(size=2) +
@@ -242,7 +242,7 @@ neutral %>%
                     labels=c("Cold","Warm"),
                     values=c('#008080',"#d57d2c")) +
         scale_shape_manual(name="Type",
-                           breaks=c("Control", "Hot_control", "Treatment"),
+                           breaks=c("Cold_control", "Warm_control", "Cold-intervention"),
                            labels=c("Cold-Control", "Warm-Control", "Cold-Intervention"),
                          values=c("circle","square","triangle")) +
 				geom_point(size=2) +
@@ -266,7 +266,7 @@ phylo %>%
                     labels=c("Cold","Warm"),
                     values=c('#008080',"#d57d2c")) +
   scale_shape_manual(name="Type",
-                           breaks=c("Control", "Hot_control", "Treatment"),
+                           breaks=c("Cold_control", "Warm_control", "Cold-intervention"),
                            labels=c("Cold-Control", "Warm-Control", "Cold-Intervention"),
                          values=c("circle","square","triangle")) +
   geom_point(size=2) +
@@ -588,7 +588,7 @@ difference_table_wild <- element_gift_sig_wild %>%
   left_join(., uniqueGIFT_db[c(1, 3, 4)], by = join_by(Elements == Code_element)) %>%
   arrange(Function) %>%
   mutate(Difference = Cold - Warm) %>%
-  mutate(group_color = ifelse(Difference < 0, "Hot", "Cold")) 
+  mutate(group_color = ifelse(Difference < 0, "Warm", "Cold")) 
 ```
 
 ```{r commun_wilcox_elem_plot_wild, comment="", message=FALSE, warning=FALSE, fig.height=6, fig.width=12, fig.fullwidth=TRUE}

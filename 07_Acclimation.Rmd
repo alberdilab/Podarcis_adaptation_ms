@@ -51,12 +51,12 @@ alpha_div %>%
       geom_boxplot(outlier.shape = NA) +
       geom_jitter(alpha=0.5) +
       scale_color_manual(name="Population",
-          breaks=c("Cold_wet","Hot_dry"),
-          labels=c("Cold","Hot"),
+          breaks=c("Cold","Warm"),
+          labels=c("Cold","Warm"),
           values=c('#008080', "#d57d2c")) +
       scale_fill_manual(name="Population",
-          breaks=c("Cold_wet","Hot_dry"),
-          labels=c("Cold","Hot"),
+          breaks=c("Cold","Warm"),
+          labels=c("Cold","Warm"),
           values=c('#00808050', "#d57d2c50")) +
       facet_wrap(. ~ metric,scales = "free") +
       coord_cartesian(xlim = c(1, NA)) +
@@ -155,8 +155,8 @@ richness_accli %>%
                      labels=c("Cold","Hot"),
                      values=c('#008080',"#d57d2c")) +
   scale_shape_manual(name="Type",
-                     breaks=c("Control", "Hot_control", "Treatment"),
-                     labels=c("Cold-Cold", "Hot-Hot", "Cold-Hot"),
+                     breaks=c("Cold_ontrol", "Warm_control", "Cold_intervention"),
+                     labels=c("Cold_ontrol", "Warm_control", "Cold_intervention"),
                      values=c("circle","square","triangle")) +
   geom_point(size=2) +
   geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
@@ -179,8 +179,8 @@ neutral_accli %>%
                      labels=c("Cold","Hot"),
                      values=c('#008080',"#d57d2c")) +
   scale_shape_manual(name="Type",
-                     breaks=c("Control", "Hot_control", "Treatment"),
-                     labels=c("Cold-Cold", "Hot-Hot", "Cold-Hot"),
+                     breaks=c("Cold_ontrol", "Warm_control", "Cold_intervention"),
+                     labels=c("Cold_ontrol", "Warm_control", "Cold_intervention"),
                      values=c("circle","square","triangle")) +
   geom_point(size=2) +
   geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
@@ -203,8 +203,8 @@ phylo_accli %>%
                      labels=c("Cold","Hot"),
                      values=c('#008080',"#d57d2c")) +
   scale_shape_manual(name="Type",
-                     breaks=c("Control", "Hot_control", "Treatment"),
-                     labels=c("Cold-Cold", "Hot-Hot", "Cold-Hot"),
+                     breaks=c("Cold_ontrol", "Warm_control", "Cold_intervention"),
+                     labels=c("Cold_ontrol", "Warm_control", "Cold_intervention"),
                      values=c("circle","square","triangle")) +
   geom_point(size=2) +
   geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
