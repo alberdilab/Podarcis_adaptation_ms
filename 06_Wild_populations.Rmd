@@ -219,7 +219,7 @@ richness %>%
                     values=c('#008080',"#d57d2c")) +
         scale_shape_manual(name="Type",
                            breaks=c("Cold_control", "Warm_control", "Cold-intervention"),
-                           labels=c("Cold-Control", "Warm-Control", "Cold-Intervention"),
+                           labels=c("Cold-control", "Warm-control", "Cold-intervention"),
                          values=c("circle","square","triangle")) +
 				geom_point(size=2) +
 				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
@@ -243,7 +243,7 @@ neutral %>%
                     values=c('#008080',"#d57d2c")) +
         scale_shape_manual(name="Type",
                            breaks=c("Cold_control", "Warm_control", "Cold-intervention"),
-                           labels=c("Cold-Control", "Warm-Control", "Cold-Intervention"),
+                           labels=c("Cold-control", "Warm-control", "Cold-intervention"),
                          values=c("circle","square","triangle")) +
 				geom_point(size=2) +
 				geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
@@ -267,7 +267,7 @@ phylo %>%
                     values=c('#008080',"#d57d2c")) +
   scale_shape_manual(name="Type",
                            breaks=c("Cold_control", "Warm_control", "Cold-intervention"),
-                           labels=c("Cold-Control", "Warm-Control", "Cold-Intervention"),
+                           labels=c("Cold-control", "Warm-control", "Cold-intervention"),
                          values=c("circle","square","triangle")) +
   geom_point(size=2) +
   geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
