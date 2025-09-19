@@ -37,7 +37,7 @@ genome-phylogeny
 genome-quality-1
 functional-overview
 predicted-genes
-number-of-annotated-genes-and-percentages-doesnt-work
+number-of-annotated-genes-and-percentages
 number-of-kegg-annotatated-genes-and-percentages
 functional-ordination
 community-composition
@@ -155,3 +155,7 @@ cc-from-acclimation-to-post-fmt
 wc-from-acclimation-to-post-fmt
 cc-vs-ci-raw-data-modelling-lmm
 ci-vs-wc-raw-data-modelling-lmm
+antimicrobial-resistance
+add-genome-column-to-the-annotations-dataframe
+link-metadata-information-to-the-genomes
+amr-diversity

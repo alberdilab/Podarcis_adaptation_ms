@@ -1,7 +1,7 @@
 # MAG catalogue
 
 ```{r load_data_mag}
-load("data/data_25082025.Rdata")
+load("data/data_16092025.Rdata")
 ```
 
 ## Genome phylogeny
@@ -146,7 +146,7 @@ pred_genes <- genome_annotations %>%
 cat(pred_genes)
 ```
 
-### Number of annotated genes and percentages (doesn't work)
+### Number of annotated genes and percentages
 ```{r annotation_stats_gut, message=FALSE, warning=FALSE, fig.height=10, fig.width=10, fig.fullwidth=TRUE}
 
 # Some annotation

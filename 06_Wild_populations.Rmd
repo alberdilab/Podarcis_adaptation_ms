@@ -6,10 +6,10 @@ message=FALSE)
 set.seed(2802)
 ```
 ```{r load_data_wild}
-load("data/data_25082025.Rdata")
-load("data/objects_25082025.Rdata")
-load("data/alpha_25082025.Rdata")
-load("data/beta_25082025.Rdata")
+load("data/data_16092025.Rdata")
+load("data/objects_16092025.Rdata")
+load("data/alpha_16092025.Rdata")
+load("data/beta_16092025.Rdata")
 ```
 
 ## Shared and unique MAGs

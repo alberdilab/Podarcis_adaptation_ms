@@ -142,7 +142,7 @@ Two samples are removed from the analysis due to their low sequencing depth.
 
 ```{r filterging, echo=TRUE, warning=FALSE, eval=FALSE}
 #Counts_raw
-columns_to_exclude <- c("AD91", "AC85") # Columns to exclude ("AD16","AD23", "AD25", )
+columns_to_exclude <- c("AD91", "AC85","AD16","AD23", "AD25") # Columns to exclude
 read_counts <- read_counts %>%
   select(-columns_to_exclude)
 
@@ -152,7 +152,11 @@ genome_coverage <- genome_coverage %>%
 
 #Metadata
 sample_metadata <- sample_metadata %>%
-  filter(Tube_code %in% colnames(read_counts))
+  filter(Tube_code != "AC85") %>%
+  filter(Tube_code != "AD16") %>%
+  filter(Tube_code != "AD23") %>%
+  filter(Tube_code != "AD25") %>%
+  filter(Tube_code != "AD91")
 ```
 
 ### Filter reads by coverage
@@ -356,10 +360,10 @@ save(sample_metadata,
      genome_tree,
      phylum_colors,
      data_stats,
-     file = "data/data_25082025.Rdata")
+     file = "data/data_16092025.Rdata")
 ```
 
 ```{r wrap_working_objects_1, warning=FALSE, comments="", message=FALSE, eval=FALSE}
 save(genome_gifts, 
-     file = "data/25082025gifts.Rdata")
+     file = "data/16092025gifts.Rdata")
 ```

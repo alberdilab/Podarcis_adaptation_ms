@@ -1,9 +1,9 @@
 # Does the antibiotic administration deplete the gut microbiota?
 ```{r data_antibiotics, comment="", message=FALSE, warning=FALSE, echo=FALSE}
-load("data/data_25082025.Rdata")
-load("data/objects_25082025.Rdata")
-load("data/alpha_25082025.Rdata")
-load("data/beta_25082025.Rdata")
+load("data/data_16092025.Rdata")
+load("data/objects_16092025.Rdata")
+load("data/alpha_16092025.Rdata")
+load("data/beta_16092025.Rdata")
 ```
 
 ## DNA extraction

@@ -1,14 +1,14 @@
 # Data statistics
 
 ```{r load_data_stats}
-load("data/data_25082025.Rdata")
+load("data/data_16092025.Rdata")
 sample_metadata <- sample_metadata %>%
     mutate(time_point=case_when(
-    time_point %in% c("Transplant1") ~ "Donor1",
+    time_point %in% c("Transplant1") ~ "Inoculum1",
     TRUE ~ time_point
   ))%>%
     mutate(time_point=case_when(
-    time_point %in% c("Transplant2") ~ "Donor2",
+    time_point %in% c("Transplant2") ~ "Inoculum2",
     TRUE ~ time_point
   )) %>% 
     mutate(Population=case_when(

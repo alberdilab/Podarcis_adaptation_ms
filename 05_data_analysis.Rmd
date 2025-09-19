@@ -7,8 +7,8 @@ set.seed(1802)
 ```
 
 ```{r load_data_community}
-load("data/data_25082025.Rdata")
-load("data/25082025gifts.Rdata")
+load("data/data_16092025.Rdata")
+load("data/16092025gifts.Rdata")
 ```
 
 ```{r data, comment="", message=FALSE, warning=FALSE, eval=FALSE}
@@ -29,8 +29,8 @@ table <- genome_counts_filt %>%
   rownames_to_column(., "sample")
   
 master_table <- sample_metadata %>%
-  mutate(time_point = case_when(time_point %in% c("Transplant1") ~ "Donor1", TRUE ~ time_point)) %>%
-  mutate(time_point = case_when(time_point %in% c("Transplant2") ~ "Donor2", TRUE ~ time_point)) %>%
+  mutate(time_point = case_when(time_point %in% c("Transplant1") ~ "Inoculum1", TRUE ~ time_point)) %>%
+  mutate(time_point = case_when(time_point %in% c("Transplant2") ~ "Inoculum2", TRUE ~ time_point)) %>%
   mutate(Population = case_when(Population %in% c("Cold_wet") ~ "Cold", TRUE ~ Population)) %>%
   mutate(Population = case_when(Population %in% c("Hot_dry") ~ "Warm", TRUE ~ Population)) %>%
   mutate(type = case_when(type %in% c("Hot_control") ~ "Warm_control", TRUE ~ type)) %>%
@@ -46,7 +46,7 @@ sample_metadata <- master_table %>%
   select(1,2,4:8,10,12)
 
 genome_counts_filt <- master_table %>% 
-  select(12,13:325) %>% 
+  select(12,13:322) %>% 
   t() %>%
   row_to_names(row_number = 1) %>% 
   as.data.frame() %>% 
@@ -69,7 +69,7 @@ count_phy <- genome_counts_filt %>%
   otu_table(., taxa_are_rows=T)
 
 sample_info_tab_phy <- sample_metadata%>%
-  column_to_rownames(var="Tube_code")%>%
+  column_to_rownames(var="sample")%>%
   sample_data()
 
 TAX <- genome_metadata%>%
@@ -135,7 +135,7 @@ save(sample_metadata,
      GIFTs_domains_community,
      element_gift,
      uniqueGIFT_db,
-     file = "data/objects_25082025.Rdata")
+     file = "data/objects_16092025.Rdata")
 ```
 
 ## Calculate diversities
@@ -189,7 +189,7 @@ alpha_div <- richness %>%
 
 ```{r save_alpha, comment="", message=FALSE,warning=FALSE, eval=FALSE}
 save(alpha_div, 
-     file = "data/alpha_25082025.Rdata")
+     file = "data/alpha_16092025.Rdata")
 ```
 
 ### Beta diversity
@@ -222,5 +222,5 @@ genome_counts_filt1 <- genome_counts_filt[genome_counts_filt$genome %in% rowname
 save(beta_q0n, 
      beta_q1n, 
      beta_q1p, 
-     file = "data/beta_25082025.Rdata")
+     file = "data/beta_16092025.Rdata")
 ```

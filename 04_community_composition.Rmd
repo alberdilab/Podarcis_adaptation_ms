@@ -1,7 +1,7 @@
 # Community composition
 
 ```{r load_data_community_2}
-load("data/data_25082025.Rdata")
+load("data/data_16092025.Rdata")
 ```
 
 ## Taxonomy overview 
@@ -21,7 +21,8 @@ merged_data <- genome_counts_filt %>%
   pivot_longer(-genome, names_to = "sample", values_to = "count") %>% #reduce to minimum number of columns
   left_join(., genome_metadata, by = join_by(genome == genome)) %>% #append genome metadata
   left_join(., sample_metadata, by = join_by(sample == Tube_code)) %>% #append sample metadata
-  filter(count > 0) #filter 0 counts
+  filter(count > 0) %>% #filter 0 counts
+  filter(individual!="NA")
 
 ggplot(merged_data, aes(
   x = sample,

@@ -1,16 +1,16 @@
 # Does the inoculum sample maintain the microbial community found in acclimation?
 ```{r data_donor, comment="", message=FALSE, warning=FALSE, echo=FALSE}
-load("data/data_25082025.Rdata")
-load("data/objects_25082025.Rdata")
-load("data/alpha_25082025.Rdata")
-load("data/beta_25082025.Rdata")
+load("data/data_16092025.Rdata")
+load("data/objects_16092025.Rdata")
+load("data/alpha_16092025.Rdata")
+load("data/beta_16092025.Rdata")
 ```
 
 ```{r filter_data_donor2, comment="", message=FALSE, warning=FALSE}
 sample_metadata <- sample_metadata %>%
   mutate(treatment=time_point) %>% 
     mutate(treatment=case_when(
-    treatment %in% c("Donor1", "Donor2") ~ "Inoculum",
+    treatment %in% c("Inoculum1", "Inoculum2") ~ "Inoculum",
     TRUE ~ treatment
   ))
 
@@ -34,7 +34,7 @@ alpha_div %>%
   pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
   left_join(., alpha_div_meta, by = "sample") %>%
   mutate(metric=factor(metric,levels=c("richness","neutral","phylogenetic"))) %>%
-  #filter(type == "Warm_control" & treatment %in% c("Acclimation","Inoculum")) %>% 
+  filter(type == "Warm_control" & treatment %in% c("Acclimation","Inoculum")) %>% 
   ggplot(aes(y = value, x = treatment, color=treatment, fill=treatment)) +
   geom_boxplot(width = 0.5,alpha=0.5 ,outlier.shape = NA, show.legend = FALSE) +
   geom_jitter(width = 0.2, show.legend = FALSE) +

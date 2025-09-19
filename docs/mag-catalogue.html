@@ -2107,7 +2107,7 @@ color: #a52929;
 <li class="chapter" data-level="4.3" data-path="mag-catalogue.html"><a href="mag-catalogue.html#functional-overview"><i class="fa fa-check"></i><b>4.3</b> Functional overview</a>
 <ul>
 <li class="chapter" data-level="4.3.1" data-path="mag-catalogue.html"><a href="mag-catalogue.html#predicted-genes"><i class="fa fa-check"></i><b>4.3.1</b> Predicted genes</a></li>
-<li class="chapter" data-level="4.3.2" data-path="mag-catalogue.html"><a href="mag-catalogue.html#number-of-annotated-genes-and-percentages-doesnt-work"><i class="fa fa-check"></i><b>4.3.2</b> Number of annotated genes and percentages (doesn’t work)</a></li>
+<li class="chapter" data-level="4.3.2" data-path="mag-catalogue.html"><a href="mag-catalogue.html#number-of-annotated-genes-and-percentages"><i class="fa fa-check"></i><b>4.3.2</b> Number of annotated genes and percentages</a></li>
 <li class="chapter" data-level="4.3.3" data-path="mag-catalogue.html"><a href="mag-catalogue.html#number-of-kegg-annotatated-genes-and-percentages"><i class="fa fa-check"></i><b>4.3.3</b> Number of KEGG annotatated genes and percentages</a></li>
 </ul></li>
 <li class="chapter" data-level="4.4" data-path="mag-catalogue.html"><a href="mag-catalogue.html#functional-ordination"><i class="fa fa-check"></i><b>4.4</b> Functional ordination</a></li>
@@ -2245,6 +2245,12 @@ color: #a52929;
 <li class="chapter" data-level="15.1.3" data-path="physiological-measurements.html"><a href="physiological-measurements.html#data-modelling"><i class="fa fa-check"></i><b>15.1.3</b> Data modelling</a></li>
 </ul></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="antimicrobial-resistance.html"><a href="antimicrobial-resistance.html"><i class="fa fa-check"></i><b>16</b> Antimicrobial resistance</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="antimicrobial-resistance.html"><a href="antimicrobial-resistance.html#add-genome-column-to-the-annotations-dataframe"><i class="fa fa-check"></i><b>16.1</b> Add genome column to the annotations dataframe</a></li>
+<li class="chapter" data-level="16.2" data-path="antimicrobial-resistance.html"><a href="antimicrobial-resistance.html#link-metadata-information-to-the-genomes"><i class="fa fa-check"></i><b>16.2</b> Link metadata information to the genomes</a></li>
+<li class="chapter" data-level="16.3" data-path="antimicrobial-resistance.html"><a href="antimicrobial-resistance.html#amr-diversity"><i class="fa fa-check"></i><b>16.3</b> AMR diversity</a></li>
+</ul></li>
 <li class="divider"></li>
 <li><a href="https://www.alberdilab.dk" target="blank"><b>www.alberdilab.dk</b></a></li>
 <li><a href="https://www.earthhologenome.org" target="blank"><b>www.earthhologenome.org</b></a></li>
@@ -2269,7 +2275,7 @@ color: #a52929;
             <section class="normal" id="section-">
 <div id="mag-catalogue" class="section level1 hasAnchor" number="4">
 <h1><span class="header-section-number">Chapter 4</span> MAG catalogue<a href="mag-catalogue.html#mag-catalogue" class="anchor-section" aria-label="Anchor link to header"></a></h1>
-<div class="sourceCode" id="cb39"><pre class="sourceCode r script-source"><code class="sourceCode r"><span id="cb39-1"><a href="mag-catalogue.html#cb39-1" tabindex="-1"></a><span class="fu">load</span>(<span class="st">&quot;data/data_25082025.Rdata&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb39"><pre class="sourceCode r script-source"><code class="sourceCode r"><span id="cb39-1"><a href="mag-catalogue.html#cb39-1" tabindex="-1"></a><span class="fu">load</span>(<span class="st">&quot;data/data_16092025.Rdata&quot;</span>)</span></code></pre></div>
 <div id="genome-phylogeny" class="section level2 hasAnchor" number="4.1">
 <h2><span class="header-section-number">4.1</span> Genome phylogeny<a href="mag-catalogue.html#genome-phylogeny" class="anchor-section" aria-label="Anchor link to header"></a></h2>
 <div class="sourceCode" id="cb40"><pre class="sourceCode r script-source"><code class="sourceCode r"><span id="cb40-1"><a href="mag-catalogue.html#cb40-1" tabindex="-1"></a><span class="co"># Generate the phylum color heatmap</span></span>
@@ -2346,8 +2352,8 @@ color: #a52929;
 
     <script>
 
-      function styleCell_vuxvqh5kxgswg4n1oqbi(i, j, css_id) {
-          var table = document.getElementById("tinytable_vuxvqh5kxgswg4n1oqbi");
+      function styleCell_zfndq8csmhs7ya4vr0ej(i, j, css_id) {
+          var table = document.getElementById("tinytable_zfndq8csmhs7ya4vr0ej");
           var cell = table.rows[i]?.cells[j];  // Safe navigation to avoid errors
           if (cell) {
               console.log(`Styling cell at (${i}, ${j}) with class ${css_id}`);
@@ -2357,7 +2363,7 @@ color: #a52929;
           }
       }
       function insertSpanRow(i, colspan, content) {
-        var table = document.getElementById('tinytable_vuxvqh5kxgswg4n1oqbi');
+        var table = document.getElementById('tinytable_zfndq8csmhs7ya4vr0ej');
         var newRow = table.insertRow(i);
         var newCell = newRow.insertCell(0);
         newCell.setAttribute("colspan", colspan);
@@ -2365,8 +2371,8 @@ color: #a52929;
         // this may be unsafe, but innerText does not interpret <br>
         newCell.innerHTML = content;
       }
-      function spanCell_vuxvqh5kxgswg4n1oqbi(i, j, rowspan, colspan) {
-        var table = document.getElementById("tinytable_vuxvqh5kxgswg4n1oqbi");
+      function spanCell_zfndq8csmhs7ya4vr0ej(i, j, rowspan, colspan) {
+        var table = document.getElementById("tinytable_zfndq8csmhs7ya4vr0ej");
         const targetRow = table.rows[i];
         const targetCell = targetRow.cells[j];
         for (let r = 0; r < rowspan; r++) {
@@ -2396,14 +2402,14 @@ color: #a52929;
       window.addEventListener('load', function () {
           var cellsToStyle = [
             // tinytable style arrays after
-          { positions: [ { i: 1, j: 0 }, { i: 1, j: 1 },  ], css_id: 'tinytable_css_dj6uf61yhdvr0hgbdoxj',}, 
-          { positions: [ { i: 0, j: 0 }, { i: 0, j: 1 },  ], css_id: 'tinytable_css_dgez4aeobb1asrpv5fmz',}, 
+          { positions: [ { i: 1, j: 0 }, { i: 1, j: 1 },  ], css_id: 'tinytable_css_q6099lljmhaugb70nxv2',}, 
+          { positions: [ { i: 0, j: 0 }, { i: 0, j: 1 },  ], css_id: 'tinytable_css_066cgh9pte41x6kbpi6h',}, 
           ];
 
           // Loop over the arrays to style the cells
           cellsToStyle.forEach(function (group) {
               group.positions.forEach(function (cell) {
-                  styleCell_vuxvqh5kxgswg4n1oqbi(cell.i, cell.j, group.css_id);
+                  styleCell_zfndq8csmhs7ya4vr0ej(cell.i, cell.j, group.css_id);
               });
           });
       });
@@ -2411,11 +2417,11 @@ color: #a52929;
 
     <style>
 
-.table td.tinytable_css_dj6uf61yhdvr0hgbdoxj, .table th.tinytable_css_dj6uf61yhdvr0hgbdoxj { border-bottom: solid #d3d8dc 0.1em; }
-.table td.tinytable_css_dgez4aeobb1asrpv5fmz, .table th.tinytable_css_dgez4aeobb1asrpv5fmz { border-top: solid #d3d8dc 0.1em; border-bottom: solid #d3d8dc 0.05em; }
+.table td.tinytable_css_q6099lljmhaugb70nxv2, .table th.tinytable_css_q6099lljmhaugb70nxv2 { border-bottom: solid #d3d8dc 0.1em; }
+.table td.tinytable_css_066cgh9pte41x6kbpi6h, .table th.tinytable_css_066cgh9pte41x6kbpi6h { border-top: solid #d3d8dc 0.1em; border-bottom: solid #d3d8dc 0.05em; }
 </style>
     <div class="container">
-      <table class="table table-borderless" id="tinytable_vuxvqh5kxgswg4n1oqbi" style="width: auto; margin-left: auto; margin-right: auto;" data-quarto-disable-processing="true">
+      <table class="table table-borderless" id="tinytable_zfndq8csmhs7ya4vr0ej" style="width: auto; margin-left: auto; margin-right: auto;" data-quarto-disable-processing="true">
         <thead>
         
               <tr>
@@ -2502,8 +2508,8 @@ color: #a52929;
 <span id="cb45-5"><a href="mag-catalogue.html#cb45-5" tabindex="-1"></a><span class="fu">cat</span>(pred_genes)</span></code></pre></div>
 <pre class="script-output"><code>930700</code></pre>
 </div>
-<div id="number-of-annotated-genes-and-percentages-doesnt-work" class="section level3 hasAnchor" number="4.3.2">
-<h3><span class="header-section-number">4.3.2</span> Number of annotated genes and percentages (doesn’t work)<a href="mag-catalogue.html#number-of-annotated-genes-and-percentages-doesnt-work" class="anchor-section" aria-label="Anchor link to header"></a></h3>
+<div id="number-of-annotated-genes-and-percentages" class="section level3 hasAnchor" number="4.3.2">
+<h3><span class="header-section-number">4.3.2</span> Number of annotated genes and percentages<a href="mag-catalogue.html#number-of-annotated-genes-and-percentages" class="anchor-section" aria-label="Anchor link to header"></a></h3>
 <div class="sourceCode" id="cb47"><pre class="sourceCode r script-source"><code class="sourceCode r"><span id="cb47-1"><a href="mag-catalogue.html#cb47-1" tabindex="-1"></a><span class="co"># Some annotation</span></span>
 <span id="cb47-2"><a href="mag-catalogue.html#cb47-2" tabindex="-1"></a>genome_annota <span class="ot">&lt;-</span> genome_annotations <span class="sc">%&gt;%</span></span>
 <span id="cb47-3"><a href="mag-catalogue.html#cb47-3" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">if_any</span>(<span class="fu">c</span>(ko_id, pfam_hits, cazy_hits), <span class="sc">~</span> <span class="sc">!</span><span class="fu">is.na</span>(.))) <span class="sc">%&gt;%</span></span>

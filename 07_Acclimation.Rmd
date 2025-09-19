@@ -1,9 +1,9 @@
 # Do populations mantain a different GM after acclimation?
 ```{r load_data_acclimation}
-load("data/data_25082025.Rdata")
-load("data/objects_25082025.Rdata")
-load("data/alpha_25082025.Rdata")
-load("data/beta_25082025.Rdata")
+load("data/data_16092025.Rdata")
+load("data/objects_16092025.Rdata")
+load("data/alpha_16092025.Rdata")
+load("data/beta_16092025.Rdata")
 ```
 ```{r knitr_options_acclim, include=FALSE}
 knitr::opts_chunk$set(fig.width=10, fig.height=7, fig.fullwidth=TRUE,

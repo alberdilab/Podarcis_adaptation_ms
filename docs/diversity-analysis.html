@@ -2107,7 +2107,7 @@ color: #a52929;
 <li class="chapter" data-level="4.3" data-path="mag-catalogue.html"><a href="mag-catalogue.html#functional-overview"><i class="fa fa-check"></i><b>4.3</b> Functional overview</a>
 <ul>
 <li class="chapter" data-level="4.3.1" data-path="mag-catalogue.html"><a href="mag-catalogue.html#predicted-genes"><i class="fa fa-check"></i><b>4.3.1</b> Predicted genes</a></li>
-<li class="chapter" data-level="4.3.2" data-path="mag-catalogue.html"><a href="mag-catalogue.html#number-of-annotated-genes-and-percentages-doesnt-work"><i class="fa fa-check"></i><b>4.3.2</b> Number of annotated genes and percentages (doesn’t work)</a></li>
+<li class="chapter" data-level="4.3.2" data-path="mag-catalogue.html"><a href="mag-catalogue.html#number-of-annotated-genes-and-percentages"><i class="fa fa-check"></i><b>4.3.2</b> Number of annotated genes and percentages</a></li>
 <li class="chapter" data-level="4.3.3" data-path="mag-catalogue.html"><a href="mag-catalogue.html#number-of-kegg-annotatated-genes-and-percentages"><i class="fa fa-check"></i><b>4.3.3</b> Number of KEGG annotatated genes and percentages</a></li>
 </ul></li>
 <li class="chapter" data-level="4.4" data-path="mag-catalogue.html"><a href="mag-catalogue.html#functional-ordination"><i class="fa fa-check"></i><b>4.4</b> Functional ordination</a></li>
@@ -2245,6 +2245,12 @@ color: #a52929;
 <li class="chapter" data-level="15.1.3" data-path="physiological-measurements.html"><a href="physiological-measurements.html#data-modelling"><i class="fa fa-check"></i><b>15.1.3</b> Data modelling</a></li>
 </ul></li>
 </ul></li>
+<li class="chapter" data-level="16" data-path="antimicrobial-resistance.html"><a href="antimicrobial-resistance.html"><i class="fa fa-check"></i><b>16</b> Antimicrobial resistance</a>
+<ul>
+<li class="chapter" data-level="16.1" data-path="antimicrobial-resistance.html"><a href="antimicrobial-resistance.html#add-genome-column-to-the-annotations-dataframe"><i class="fa fa-check"></i><b>16.1</b> Add genome column to the annotations dataframe</a></li>
+<li class="chapter" data-level="16.2" data-path="antimicrobial-resistance.html"><a href="antimicrobial-resistance.html#link-metadata-information-to-the-genomes"><i class="fa fa-check"></i><b>16.2</b> Link metadata information to the genomes</a></li>
+<li class="chapter" data-level="16.3" data-path="antimicrobial-resistance.html"><a href="antimicrobial-resistance.html#amr-diversity"><i class="fa fa-check"></i><b>16.3</b> AMR diversity</a></li>
+</ul></li>
 <li class="divider"></li>
 <li><a href="https://www.alberdilab.dk" target="blank"><b>www.alberdilab.dk</b></a></li>
 <li><a href="https://www.earthhologenome.org" target="blank"><b>www.earthhologenome.org</b></a></li>
@@ -2269,8 +2275,8 @@ color: #a52929;
             <section class="normal" id="section-">
 <div id="diversity-analysis" class="section level1 hasAnchor" number="6">
 <h1><span class="header-section-number">Chapter 6</span> Diversity analysis<a href="diversity-analysis.html#diversity-analysis" class="anchor-section" aria-label="Anchor link to header"></a></h1>
-<div class="sourceCode" id="cb70"><pre class="sourceCode r script-source"><code class="sourceCode r"><span id="cb70-1"><a href="diversity-analysis.html#cb70-1" tabindex="-1"></a><span class="fu">load</span>(<span class="st">&quot;data/data_25082025.Rdata&quot;</span>)</span>
-<span id="cb70-2"><a href="diversity-analysis.html#cb70-2" tabindex="-1"></a><span class="fu">load</span>(<span class="st">&quot;data/25082025gifts.Rdata&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb70"><pre class="sourceCode r script-source"><code class="sourceCode r"><span id="cb70-1"><a href="diversity-analysis.html#cb70-1" tabindex="-1"></a><span class="fu">load</span>(<span class="st">&quot;data/data_16092025.Rdata&quot;</span>)</span>
+<span id="cb70-2"><a href="diversity-analysis.html#cb70-2" tabindex="-1"></a><span class="fu">load</span>(<span class="st">&quot;data/16092025gifts.Rdata&quot;</span>)</span></code></pre></div>
 <div class="sourceCode" id="cb71"><pre class="sourceCode r script-source"><code class="sourceCode r"><span id="cb71-1"><a href="diversity-analysis.html#cb71-1" tabindex="-1"></a>genome_counts_filt <span class="ot">&lt;-</span> genome_counts_filt <span class="sc">%&gt;%</span> </span>
 <span id="cb71-2"><a href="diversity-analysis.html#cb71-2" tabindex="-1"></a>  <span class="fu">column_to_rownames</span>(<span class="at">var =</span> <span class="st">&quot;genome&quot;</span>) <span class="sc">%&gt;%</span></span>
 <span id="cb71-3"><a href="diversity-analysis.html#cb71-3" tabindex="-1"></a>  <span class="fu">select</span>(<span class="fu">any_of</span>(<span class="fu">c</span>(<span class="st">&quot;genome&quot;</span>,<span class="fu">intersect</span>(sample_metadata<span class="sc">$</span>Tube_code, <span class="fu">colnames</span>(read_counts))))) <span class="sc">%&gt;%</span></span>
@@ -2288,8 +2294,8 @@ color: #a52929;
 <span id="cb71-15"><a href="diversity-analysis.html#cb71-15" tabindex="-1"></a>  <span class="fu">rownames_to_column</span>(., <span class="st">&quot;sample&quot;</span>)</span>
 <span id="cb71-16"><a href="diversity-analysis.html#cb71-16" tabindex="-1"></a>  </span>
 <span id="cb71-17"><a href="diversity-analysis.html#cb71-17" tabindex="-1"></a>master_table <span class="ot">&lt;-</span> sample_metadata <span class="sc">%&gt;%</span></span>
-<span id="cb71-18"><a href="diversity-analysis.html#cb71-18" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">time_point =</span> <span class="fu">case_when</span>(time_point <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;Transplant1&quot;</span>) <span class="sc">~</span> <span class="st">&quot;Donor1&quot;</span>, <span class="cn">TRUE</span> <span class="sc">~</span> time_point)) <span class="sc">%&gt;%</span></span>
-<span id="cb71-19"><a href="diversity-analysis.html#cb71-19" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">time_point =</span> <span class="fu">case_when</span>(time_point <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;Transplant2&quot;</span>) <span class="sc">~</span> <span class="st">&quot;Donor2&quot;</span>, <span class="cn">TRUE</span> <span class="sc">~</span> time_point)) <span class="sc">%&gt;%</span></span>
+<span id="cb71-18"><a href="diversity-analysis.html#cb71-18" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">time_point =</span> <span class="fu">case_when</span>(time_point <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;Transplant1&quot;</span>) <span class="sc">~</span> <span class="st">&quot;Inoculum1&quot;</span>, <span class="cn">TRUE</span> <span class="sc">~</span> time_point)) <span class="sc">%&gt;%</span></span>
+<span id="cb71-19"><a href="diversity-analysis.html#cb71-19" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">time_point =</span> <span class="fu">case_when</span>(time_point <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;Transplant2&quot;</span>) <span class="sc">~</span> <span class="st">&quot;Inoculum2&quot;</span>, <span class="cn">TRUE</span> <span class="sc">~</span> time_point)) <span class="sc">%&gt;%</span></span>
 <span id="cb71-20"><a href="diversity-analysis.html#cb71-20" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Population =</span> <span class="fu">case_when</span>(Population <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;Cold_wet&quot;</span>) <span class="sc">~</span> <span class="st">&quot;Cold&quot;</span>, <span class="cn">TRUE</span> <span class="sc">~</span> Population)) <span class="sc">%&gt;%</span></span>
 <span id="cb71-21"><a href="diversity-analysis.html#cb71-21" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Population =</span> <span class="fu">case_when</span>(Population <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;Hot_dry&quot;</span>) <span class="sc">~</span> <span class="st">&quot;Warm&quot;</span>, <span class="cn">TRUE</span> <span class="sc">~</span> Population)) <span class="sc">%&gt;%</span></span>
 <span id="cb71-22"><a href="diversity-analysis.html#cb71-22" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">type =</span> <span class="fu">case_when</span>(type <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;Hot_control&quot;</span>) <span class="sc">~</span> <span class="st">&quot;Warm_control&quot;</span>, <span class="cn">TRUE</span> <span class="sc">~</span> type)) <span class="sc">%&gt;%</span></span>
@@ -2305,7 +2311,7 @@ color: #a52929;
 <span id="cb71-32"><a href="diversity-analysis.html#cb71-32" tabindex="-1"></a>  <span class="fu">select</span>(<span class="dv">1</span>,<span class="dv">2</span>,<span class="dv">4</span><span class="sc">:</span><span class="dv">8</span>,<span class="dv">10</span>,<span class="dv">12</span>)</span>
 <span id="cb71-33"><a href="diversity-analysis.html#cb71-33" tabindex="-1"></a></span>
 <span id="cb71-34"><a href="diversity-analysis.html#cb71-34" tabindex="-1"></a>genome_counts_filt <span class="ot">&lt;-</span> master_table <span class="sc">%&gt;%</span> </span>
-<span id="cb71-35"><a href="diversity-analysis.html#cb71-35" tabindex="-1"></a>  <span class="fu">select</span>(<span class="dv">12</span>,<span class="dv">13</span><span class="sc">:</span><span class="dv">325</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb71-35"><a href="diversity-analysis.html#cb71-35" tabindex="-1"></a>  <span class="fu">select</span>(<span class="dv">12</span>,<span class="dv">13</span><span class="sc">:</span><span class="dv">322</span>) <span class="sc">%&gt;%</span> </span>
 <span id="cb71-36"><a href="diversity-analysis.html#cb71-36" tabindex="-1"></a>  <span class="fu">t</span>() <span class="sc">%&gt;%</span></span>
 <span id="cb71-37"><a href="diversity-analysis.html#cb71-37" tabindex="-1"></a>  <span class="fu">row_to_names</span>(<span class="at">row_number =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span> </span>
 <span id="cb71-38"><a href="diversity-analysis.html#cb71-38" tabindex="-1"></a>  <span class="fu">as.data.frame</span>() <span class="sc">%&gt;%</span> </span>
@@ -2326,7 +2332,7 @@ color: #a52929;
 <span id="cb72-4"><a href="diversity-analysis.html#cb72-4" tabindex="-1"></a>  <span class="fu">otu_table</span>(., <span class="at">taxa_are_rows=</span>T)</span>
 <span id="cb72-5"><a href="diversity-analysis.html#cb72-5" tabindex="-1"></a></span>
 <span id="cb72-6"><a href="diversity-analysis.html#cb72-6" tabindex="-1"></a>sample_info_tab_phy <span class="ot">&lt;-</span> sample_metadata<span class="sc">%&gt;%</span></span>
-<span id="cb72-7"><a href="diversity-analysis.html#cb72-7" tabindex="-1"></a>  <span class="fu">column_to_rownames</span>(<span class="at">var=</span><span class="st">&quot;Tube_code&quot;</span>)<span class="sc">%&gt;%</span></span>
+<span id="cb72-7"><a href="diversity-analysis.html#cb72-7" tabindex="-1"></a>  <span class="fu">column_to_rownames</span>(<span class="at">var=</span><span class="st">&quot;sample&quot;</span>)<span class="sc">%&gt;%</span></span>
 <span id="cb72-8"><a href="diversity-analysis.html#cb72-8" tabindex="-1"></a>  <span class="fu">sample_data</span>()</span>
 <span id="cb72-9"><a href="diversity-analysis.html#cb72-9" tabindex="-1"></a></span>
 <span id="cb72-10"><a href="diversity-analysis.html#cb72-10" tabindex="-1"></a>TAX <span class="ot">&lt;-</span> genome_metadata<span class="sc">%&gt;%</span></span>
@@ -2384,7 +2390,7 @@ color: #a52929;
 <span id="cb75-13"><a href="diversity-analysis.html#cb75-13" tabindex="-1"></a>     GIFTs_domains_community,</span>
 <span id="cb75-14"><a href="diversity-analysis.html#cb75-14" tabindex="-1"></a>     element_gift,</span>
 <span id="cb75-15"><a href="diversity-analysis.html#cb75-15" tabindex="-1"></a>     uniqueGIFT_db,</span>
-<span id="cb75-16"><a href="diversity-analysis.html#cb75-16" tabindex="-1"></a>     <span class="at">file =</span> <span class="st">&quot;data/objects_25082025.Rdata&quot;</span>)</span></code></pre></div>
+<span id="cb75-16"><a href="diversity-analysis.html#cb75-16" tabindex="-1"></a>     <span class="at">file =</span> <span class="st">&quot;data/objects_16092025.Rdata&quot;</span>)</span></code></pre></div>
 </div>
 <div id="calculate-diversities" class="section level2 hasAnchor" number="6.3">
 <h2><span class="header-section-number">6.3</span> Calculate diversities<a href="diversity-analysis.html#calculate-diversities" class="anchor-section" aria-label="Anchor link to header"></a></h2>
@@ -2433,7 +2439,7 @@ color: #a52929;
 <span id="cb76-41"><a href="diversity-analysis.html#cb76-41" tabindex="-1"></a>  <span class="fu">full_join</span>(neutral, <span class="at">by =</span> <span class="fu">join_by</span>(sample <span class="sc">==</span> sample)) <span class="sc">%&gt;%</span></span>
 <span id="cb76-42"><a href="diversity-analysis.html#cb76-42" tabindex="-1"></a>  <span class="fu">full_join</span>(phylogenetic, <span class="at">by =</span> <span class="fu">join_by</span>(sample <span class="sc">==</span> sample))</span></code></pre></div>
 <div class="sourceCode" id="cb77"><pre class="sourceCode r script-source"><code class="sourceCode r"><span id="cb77-1"><a href="diversity-analysis.html#cb77-1" tabindex="-1"></a><span class="fu">save</span>(alpha_div, </span>
-<span id="cb77-2"><a href="diversity-analysis.html#cb77-2" tabindex="-1"></a>     <span class="at">file =</span> <span class="st">&quot;data/alpha_25082025.Rdata&quot;</span>)</span></code></pre></div>
+<span id="cb77-2"><a href="diversity-analysis.html#cb77-2" tabindex="-1"></a>     <span class="at">file =</span> <span class="st">&quot;data/alpha_16092025.Rdata&quot;</span>)</span></code></pre></div>
 </div>
 <div id="beta-diversity" class="section level3 hasAnchor" number="6.3.2">
 <h3><span class="header-section-number">6.3.2</span> Beta diversity<a href="diversity-analysis.html#beta-diversity" class="anchor-section" aria-label="Anchor link to header"></a></h3>
@@ -2461,7 +2467,7 @@ color: #a52929;
 <div class="sourceCode" id="cb79"><pre class="sourceCode r script-source"><code class="sourceCode r"><span id="cb79-1"><a href="diversity-analysis.html#cb79-1" tabindex="-1"></a><span class="fu">save</span>(beta_q0n, </span>
 <span id="cb79-2"><a href="diversity-analysis.html#cb79-2" tabindex="-1"></a>     beta_q1n, </span>
 <span id="cb79-3"><a href="diversity-analysis.html#cb79-3" tabindex="-1"></a>     beta_q1p, </span>
-<span id="cb79-4"><a href="diversity-analysis.html#cb79-4" tabindex="-1"></a>     <span class="at">file =</span> <span class="st">&quot;data/beta_25082025.Rdata&quot;</span>)</span></code></pre></div>
+<span id="cb79-4"><a href="diversity-analysis.html#cb79-4" tabindex="-1"></a>     <span class="at">file =</span> <span class="st">&quot;data/beta_16092025.Rdata&quot;</span>)</span></code></pre></div>
 
 </div>
 </div>
