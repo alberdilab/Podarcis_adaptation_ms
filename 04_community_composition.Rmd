@@ -111,7 +111,7 @@ phylum_summary %>%
     tt()
 ```
 
-#### Hot and dry population
+#### Warm and dry population
 ```{r taxonomy_phylum_summary_hot, warning=FALSE, comments="", message=FALSE}
 phylum_summary %>%
     left_join(sample_metadata, by = join_by(sample == Tube_code))  %>%

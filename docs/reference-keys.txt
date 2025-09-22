@@ -46,7 +46,7 @@ stacked-barplot
 wild-samples
 phylum-relative-abundances
 cold-and-wet-population
-hot-and-dry-population
+warm-and-dry-population
 taxonomy-boxplot
 family
 genus

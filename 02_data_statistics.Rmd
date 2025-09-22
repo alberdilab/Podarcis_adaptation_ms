@@ -63,7 +63,7 @@ data_stats_filter %>%
                     breaks=c("low_quality","mapped_lizard","unmapped_reads","mapped_mags"),
                     labels=c("Low quality","Mapped to host","Unmapped","Mapped to MAGs"),
                     values=c("#CCCCCC", "#bcdee1", "#d8b8a3","#93655c"))+
-      facet_grid(~factor(time_point, level=c("Wild", "Acclimation", "Antibiotics", "Donor1", "Donor2", "FMT1", "FMT2")), 
+      facet_grid(~factor(time_point, level=c("Wild", "Acclimation", "Antibiotics", "Inoculum1", "Inoculum2", "FMT1", "FMT2")), 
              scales = "free") +
       theme_minimal() +
       theme(axis.text.x = element_text(angle = 90, hjust = 1, size=0)) +
@@ -103,7 +103,7 @@ data_stats_filter %>%
                     labels=c("Recovered","Estimated"),
                     values=c("#52e1e8", "#876b53"))+
       theme_minimal() +
-      facet_grid(~factor(time_point, level=c("Wild", "Acclimation", "Antibiotics", "Donor1", "Donor2", "FMT1", "FMT2")), 
+      facet_grid(~factor(time_point, level=c("Wild", "Acclimation", "Antibiotics", "Inoculum1", "Inoculum2", "FMT1", "FMT2")), 
              scales = "free") +
       labs(y = "Samples", x = "Prokaryotic fraction") +
       scale_y_continuous(limits = c(0, 1)) +

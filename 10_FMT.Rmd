@@ -1545,12 +1545,12 @@ alpha_div %>%
   facet_grid(metric ~ type, scales = "free_y", labeller = labeller(metric = label_map, type = label_map))+
 #  facet_nested(.~metric+type, labeller = labeller(metric = label_map, type = label_map))+
   scale_color_manual(name="Type",
-                       breaks=c("Control", "Hot_control", "Treatment"),
-                       labels=c("Cold-Cold", "Hot-Hot", "Cold-Hot"),
+                       breaks=c("Cold_control", "Warm_control", "Cold_intervention"),
+                       labels=c("Cold_control", "Warm_control", "Cold_intervention"),
                        values=c("#4477AA","#d57d2c","#76b183")) +
       scale_fill_manual(name="Type",
-                       breaks=c("Control", "Hot_control", "Treatment"),
-                       labels=c("Cold-Cold", "Hot-Hot", "Cold-Hot"),
+                       breaks=c("Cold_control", "Warm_control", "Cold_intervention"),
+                       labels=c("Cold_control", "Warm_control", "Cold_intervention"),
                        values=c("#4477AA50","#d57d2c50","#76b18350")) +
   theme_minimal() +
   theme(axis.text.x=element_text(size=10))+
@@ -1691,11 +1691,11 @@ beta_richness_nmds_post7 <-CAP_df %>%
   ungroup() %>%
   ggplot(., aes(x=CAP1,y=CAP2, color=type,shape = time_point)) +
   scale_color_manual(name="Type",
-          breaks=c("Control","Hot_control", "Treatment"),
+          breaks=c("Cold_control", "Warm_control", "Cold_intervention"),
           labels=c("Cold-control","Warm-control", "Cold-intervention"),
           values=c("#4477AA","#d57d2c", "#76b183")) +
       scale_fill_manual(name="Type",
-          breaks=c("Control","Hot_control", "Treatment"),
+          breaks=c("Cold_control", "Warm_control", "Cold_intervention"),
           labels=c("Cold-control","Warm-control", "Cold-intervention"),
           values=c("#4477AA50","#d57d2c50","#76b18350")) +
         scale_x_discrete(labels = c("Control" = "Cold-Cold", "Hot_control" = "Hot-Hot", "Treatment" = "Cold-Hot")) +

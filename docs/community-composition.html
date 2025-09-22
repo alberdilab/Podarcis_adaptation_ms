@@ -2518,8 +2518,8 @@ color: #a52929;
     </div>
 <!-- hack to avoid NA insertion in last line -->
 </div>
-<div id="hot-and-dry-population" class="section level4 hasAnchor" number="5.1.2.2">
-<h4><span class="header-section-number">5.1.2.2</span> Hot and dry population<a href="community-composition.html#hot-and-dry-population" class="anchor-section" aria-label="Anchor link to header"></a></h4>
+<div id="warm-and-dry-population" class="section level4 hasAnchor" number="5.1.2.2">
+<h4><span class="header-section-number">5.1.2.2</span> Warm and dry population<a href="community-composition.html#warm-and-dry-population" class="anchor-section" aria-label="Anchor link to header"></a></h4>
 <div class="sourceCode" id="cb65"><pre class="sourceCode r script-source"><code class="sourceCode r"><span id="cb65-1"><a href="community-composition.html#cb65-1" tabindex="-1"></a>phylum_summary <span class="sc">%&gt;%</span></span>
 <span id="cb65-2"><a href="community-composition.html#cb65-2" tabindex="-1"></a>    <span class="fu">left_join</span>(sample_metadata, <span class="at">by =</span> <span class="fu">join_by</span>(sample <span class="sc">==</span> Tube_code))  <span class="sc">%&gt;%</span></span>
 <span id="cb65-3"><a href="community-composition.html#cb65-3" tabindex="-1"></a>    <span class="fu">group_by</span>(phylum, Population) <span class="sc">%&gt;%</span></span>

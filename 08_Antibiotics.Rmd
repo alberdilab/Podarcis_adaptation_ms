@@ -277,7 +277,7 @@ biplot_scores$Variable <- recode(
 )
 
 CAP_df %>%
-  group_by(type, time_point) %>%
+  group_by(Population, time_point) %>%
   mutate(x_cen = mean(CAP1, na.rm = TRUE)) %>%
   mutate(y_cen = mean(CAP2, na.rm = TRUE)) %>%
   ungroup() %>%
