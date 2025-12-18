@@ -6,8 +6,8 @@ message=FALSE)
 set.seed(2802)
 ```
 ```{r load_data_wild}
-load("data/data_16092025.Rdata")
-load("data/objects_16092025.Rdata")
+load("data/data_03122025.Rdata")
+load("data/objects_03122025.Rdata")
 load("data/alpha_16092025.Rdata")
 load("data/beta_16092025.Rdata")
 ```
@@ -271,16 +271,16 @@ element_gift_wild <- element_gift %>%
   select(-time_point, -type) %>%
   filter(rowSums(across(where(is.numeric), ~ . != 0)) > 0) %>%
   select(Tube_code, where( ~ is.numeric(.) && sum(.) > 0)) %>%
-  left_join(sample_metadata[c(1, 3)], by = "Tube_code")
+  left_join(sample_metadata[c(1, 4)], by = "Tube_code")
 ```
 
 ```{r commun_wilcox_elem_wild, comment="", message=FALSE, warning=FALSE}
 significant_elements_wild <- element_gift_wild %>%
-  pivot_longer(-c(Tube_code, species),
+  pivot_longer(-c(Tube_code, Population),
                names_to = "trait",
                values_to = "value") %>%
   group_by(trait) %>%
-  summarise(p_value = wilcox.test(value ~ species)$p.value) %>%
+  summarise(p_value = wilcox.test(value ~ Population)$p.value) %>%
   mutate(p_adjust = p.adjust(p_value, method = "BH")) %>%
   filter(p_adjust < 0.05) %>%
   rownames_to_column(., "Elements")  %>%
@@ -291,11 +291,11 @@ element_gift_sig_wild <- element_gift_wild %>%
     significant_elements_wild$trait,
     colnames(element_gift_wild)
   ))) %>%
-  left_join(., sample_metadata[c(1, 3)], by = join_by(Tube_code == Tube_code))
+  left_join(., sample_metadata[c(1, 4)], by = join_by(Tube_code == Tube_code))
 
 difference_table_wild <- element_gift_sig_wild %>%
   select(-Tube_code) %>%
-  group_by(species) %>%
+  group_by(Population) %>%
   summarise(across(everything(), mean)) %>%
   t() %>%
   row_to_names(row_number = 1) %>%
@@ -304,8 +304,8 @@ difference_table_wild <- element_gift_sig_wild %>%
   rownames_to_column(., "Elements") %>%
   left_join(., uniqueGIFT_db[c(1, 3, 4)], by = join_by(Elements == Code_element)) %>%
   arrange(Function) %>%
-  mutate(Difference = P.muralis - P.liolepis) %>%
-  mutate(group_color = ifelse(Difference < 0, "P.liolepis", "P.muralis")) 
+  mutate(Difference = Cold - Warm) %>%
+  mutate(group_color = ifelse(Difference < 0, "Warm", "Cold")) 
 ```
 
 ```{r commun_wilcox_elem_plot_wild, comment="", message=FALSE, warning=FALSE, fig.height=6, fig.width=12, fig.fullwidth=TRUE}
