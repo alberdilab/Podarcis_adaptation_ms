@@ -75,12 +75,12 @@ alpha_div%>%
   mutate(metric = factor(metric, levels = c("richness", "neutral", "phylogenetic")))%>%
   #time_point = factor(time_point, levels = c("Wild", "Acclimation"))) %>%
   filter(time_point %in% c("Acclimation", "Antibiotics")) %>% 
-  ggplot(aes(y = value, x = time_point, color=Population, fill=Population)) +
+  ggplot(aes(y = value, x = time_point, color=species, fill=species)) +
   geom_boxplot(width = 0.5,alpha=0.5, outlier.shape = NA, show.legend = FALSE) +
   geom_jitter(width = 0.2,show.legend = FALSE) +
   scale_color_manual(values=c('#008080', "#d57d2c")) +
   scale_fill_manual(values=c('#008080', "#d57d2c")) +
-  facet_grid(metric ~ Population, scales = "free_y", labeller = labeller(metric = label_map, type = label_map))+
+  facet_grid(metric ~ species, scales = "free_y", labeller = labeller(metric = label_map, type = label_map))+
   theme_classic() +
   theme(
     strip.background = element_blank(),
@@ -95,20 +95,20 @@ alpha_div%>%
 
 ***Richness***
 ```{r LMM, comment="", message=FALSE, warning=FALSE}
-Modelq0GLMMNB <- glmer.nb(richness ~ time_point*Population+(1|individual), data = alpha_div_meta)
+Modelq0GLMMNB <- glmer.nb(richness ~ time_point*species+(1|individual), data = alpha_div_meta)
 summary(Modelq0GLMMNB)
 ```
 
 ***Neutral***
 ```{r LMM_neutral, comment="", message=FALSE, warning=FALSE}
-Model_neutral <- nlme::lme(fixed = neutral ~ time_point*Population, data = alpha_div_meta,
+Model_neutral <- nlme::lme(fixed = neutral ~ time_point*species, data = alpha_div_meta,
                random = ~ 1 | individual)
 summary(Model_neutral)
 ```
 
 ***Phylogenetic***
 ```{r LMM_phylo, comment="", message=FALSE, warning=FALSE}
-Model_phylo <- nlme::lme(fixed = phylogenetic ~ time_point*Population, data = alpha_div_meta,
+Model_phylo <- nlme::lme(fixed = phylogenetic ~ time_point*species, data = alpha_div_meta,
                random = ~ 1 | individual)
 summary(Model_phylo)
 ```
@@ -133,7 +133,7 @@ betadisper(richness, subset_meta$time_point) %>% permutest(.)
 ```
 
 ```{r permanova_richness_adonis, comment="", message=FALSE, warning=FALSE}
-adonis2(richness ~ time_point*Population,
+adonis2(richness ~ time_point*species,
         data = subset_meta %>% arrange(match(Tube_code,labels(richness))),
         permutations = 999,
         strata = subset_meta %>% arrange(match(Tube_code,labels(richness))) %>% pull(individual),
@@ -152,7 +152,7 @@ betadisper(neutral, subset_meta$time_point) %>% permutest(.)
 ```
 
 ```{r permanova_neutral_adonis, comment="", message=FALSE, warning=FALSE}
-adonis2(neutral ~ time_point*Population,
+adonis2(neutral ~ time_point*species,
         data = subset_meta %>% arrange(match(Tube_code,labels(neutral))),
         permutations = 999,
         strata = subset_meta %>% arrange(match(Tube_code,labels(neutral))) %>% pull(individual),
@@ -170,7 +170,7 @@ betadisper(phylo, subset_meta$time_point) %>% permutest(.)
 ```
 
 ```{r permanova_phylo_adonis, comment="", message=FALSE, warning=FALSE}
-adonis2(phylo ~ time_point*Population,
+adonis2(phylo ~ time_point*species,
         data = subset_meta %>% arrange(match(Tube_code,labels(phylo))),
         permutations = 999,
         strata = subset_meta %>% arrange(match(Tube_code,labels(phylo))) %>% pull(individual),
@@ -339,7 +339,7 @@ alpha_div %>%
   mutate(metric=factor(metric,levels=c("richness", "neutral"))) %>%
   filter(metric!="phylogenetic") %>%
   filter(time_point == "Antibiotics" ) %>% 
-  ggplot(aes(y = value, x = Population, color=Population, fill=Population)) +
+  ggplot(aes(y = value, x = species, color=species, fill=species)) +
   geom_boxplot(width = 0.5,alpha=0.5 ,outlier.shape = NA, show.legend = FALSE) +
   geom_jitter(width = 0.2, show.legend = FALSE) +
   scale_color_manual(values=c('#008080', "#d57d2c")) +
@@ -363,7 +363,7 @@ alpha_div %>%
   left_join(., sample_metadata, by = "sample") %>%
   filter(metric=="phylogenetic") %>%
   filter(time_point == "Antibiotics" ) %>% 
-   ggplot(aes(y = value, x = Population, color=Population, fill=Population)) +
+   ggplot(aes(y = value, x = species, color=species, fill=species)) +
   geom_boxplot(width = 0.5,alpha=0.5 ,outlier.shape = NA, show.legend = FALSE) +
   geom_jitter(width = 0.2, show.legend = FALSE) +
   scale_color_manual(values=c('#008080', "#d57d2c")) +
@@ -397,11 +397,11 @@ richness <- as.matrix(beta_q0n$S)
 richness <- as.dist(richness[rownames(richness) %in% samples_to_keep,
                colnames(richness) %in% samples_to_keep])
 
-betadisper(richness, subset_meta$Population) %>% permutest(.) 
+betadisper(richness, subset_meta$species) %>% permutest(.) 
 ```
 
 ```{r permanova_rich1_adonis, comment="", message=FALSE, warning=FALSE}
-adonis2(richness ~ Population,
+adonis2(richness ~ species,
         data = subset_meta %>% arrange(match(Tube_code,labels(richness))),
         permutations = 999) %>%
         broom::tidy() %>%
@@ -414,11 +414,11 @@ neutral <- as.matrix(beta_q1n$S)
 neutral <- as.dist(neutral[rownames(neutral) %in% samples_to_keep,
                colnames(neutral) %in% samples_to_keep])
 
-betadisper(neutral, subset_meta$Population) %>% permutest(.)
+betadisper(neutral, subset_meta$species) %>% permutest(.)
 ```
 
 ```{r permanova_neutral1_adonis, comment="", message=FALSE, warning=FALSE}
-adonis2(neutral ~ Population,
+adonis2(neutral ~ species,
         data = subset_meta %>% arrange(match(Tube_code,labels(neutral))),
         permutations = 999) %>%
         broom::tidy() %>%
@@ -430,10 +430,10 @@ adonis2(neutral ~ Population,
 phylo <- as.matrix(beta_q1p$S)
 phylo <- as.dist(phylo[rownames(phylo) %in% samples_to_keep,
                colnames(phylo) %in% samples_to_keep])
-betadisper(phylo, subset_meta$Population) %>% permutest(.) 
+betadisper(phylo, subset_meta$species) %>% permutest(.) 
 ```
 ```{r permanova_phylo1_adonis, comment="", message=FALSE, warning=FALSE}
-adonis2(phylo ~ Population,
+adonis2(phylo ~ species,
         data = subset_meta %>% arrange(match(Tube_code,labels(phylo))),
         permutations = 999) %>%
         broom::tidy() %>%
@@ -446,11 +446,11 @@ richness %>%
   vegan::scores() %>%
   as_tibble(., rownames = "sample") %>%
   left_join(subset_meta, by = join_by(sample == Tube_code)) %>%
-  group_by(Population, time_point) %>%
+  group_by(species, time_point) %>%
   mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
   mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
   ungroup() %>%
-  ggplot(., aes(x=NMDS1,y=NMDS2, color=Population)) +
+  ggplot(., aes(x=NMDS1,y=NMDS2, color=species)) +
   scale_color_manual(values=c('#008080',"#d57d2c")) +
   geom_point(size = 2) +
   geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
@@ -463,11 +463,11 @@ neutral %>%
   vegan::scores() %>%
   as_tibble(., rownames = "sample") %>%
   left_join(subset_meta, by = join_by(sample == Tube_code))%>%
-  group_by(Population, time_point) %>%
+  group_by(species, time_point) %>%
   mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
   mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
   ungroup() %>%
-  ggplot(., aes(x=NMDS1,y=NMDS2, color=Population)) +
+  ggplot(., aes(x=NMDS1,y=NMDS2, color=species)) +
   scale_color_manual(values=c('#008080',"#d57d2c")) +
   geom_point(size = 2) +
   geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
@@ -480,11 +480,11 @@ phylo %>%
   vegan::scores() %>%
   as_tibble(., rownames = "sample") %>%
   left_join(subset_meta, by = join_by(sample == Tube_code))%>%
-  group_by(Population, time_point) %>%
+  group_by(species, time_point) %>%
   mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
   mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
   ungroup() %>%
-  ggplot(., aes(x=NMDS1,y=NMDS2, color=Population)) +
+  ggplot(., aes(x=NMDS1,y=NMDS2, color=species)) +
   scale_color_manual(values = c('#008080', "#d57d2c"))+
   geom_point(size=2) +
   geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +

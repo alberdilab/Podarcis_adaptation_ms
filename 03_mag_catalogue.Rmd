@@ -1,7 +1,7 @@
 # MAG catalogue
 
 ```{r load_data_mag}
-load("data/data_16092025.Rdata")
+load("data/data_03122025.Rdata")
 ```
 
 ## Genome phylogeny

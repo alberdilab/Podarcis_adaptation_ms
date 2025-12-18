@@ -1,7 +1,7 @@
 # Community composition
 
 ```{r load_data_community_2}
-load("data/data_16092025.Rdata")
+load("data/data_03122025.Rdata")
 ```
 
 ## Taxonomy overview 
@@ -34,7 +34,7 @@ ggplot(merged_data, aes(
            colour = "white",
            linewidth = 0.1) + #plot stacked bars with white borders
   scale_fill_manual(values = phylum_colors) +
-  facet_nested(. ~ time_point + type , scales = "free") + #facet per day and treatment
+  facet_nested(. ~ factor (time_point, level=c("Wild", "Acclimation", "Antibiotics", "Inoculum1", "Inoculum2", "FMT1", "FMT2")) + type , scales = "free") + #facet per day and treatment
   guides(fill = guide_legend(ncol = 1)) +
   labs(fill = "Phylum", y = "Relative abundance", x = "Sample") +
   theme(
@@ -63,7 +63,7 @@ merged_data  %>%
   ggplot(aes(x=sample,y=count, fill=phylum, group=phylum)) + #grouping enables keeping the same sorting of taxonomic units
     geom_bar(stat="identity", colour="white", linewidth=0.1) + #plot stacked bars with white borders
     scale_fill_manual(values=phylum_colors) +
-    facet_nested(. ~ Population,  scales="free") + #facet per day and treatment
+    facet_nested(. ~ species.y,  scales="free") + #facet per day and treatment
     guides(fill = guide_legend(ncol = 1)) +
     labs(fill="Phylum",y = "Relative abundance",x="Sample")+
   theme(

@@ -7,8 +7,8 @@ set.seed(1802)
 ```
 
 ```{r load_data_community}
-load("data/data_16092025.Rdata")
-load("data/16092025gifts.Rdata")
+load("data/data_03122025.Rdata")
+load("data/03122025gifts.Rdata")
 ```
 
 ```{r data, comment="", message=FALSE, warning=FALSE, eval=FALSE}

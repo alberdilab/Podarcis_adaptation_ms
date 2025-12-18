@@ -1,6 +1,6 @@
 # Do populations mantain a different GM after acclimation?
 ```{r load_data_acclimation}
-load("data/data_16092025.Rdata")
+load("data/data_03122025.Rdata")
 load("data/objects_16092025.Rdata")
 load("data/alpha_16092025.Rdata")
 load("data/beta_16092025.Rdata")
@@ -47,16 +47,16 @@ alpha_div %>%
   left_join(., sample_metadata, by = join_by(sample == Tube_code)) %>%
   filter(time_point=="Acclimation") %>%
   mutate(metric=factor(metric,levels=c("richness","neutral","phylogenetic"))) %>%
-      ggplot(aes(y = value, x = Population, group=Population, color=Population, fill=Population)) +
+      ggplot(aes(y = value, x = species, group=species, color=species, fill=species)) +
       geom_boxplot(outlier.shape = NA) +
       geom_jitter(alpha=0.5) +
-      scale_color_manual(name="Population",
-          breaks=c("Cold","Warm"),
-          labels=c("Cold","Warm"),
+      scale_color_manual(name="species",
+          breaks=c("Podarcis_muralis","Podarcis_liolepis"),
+          labels=c("Podarcis muralis","Podarcis liolepis"),
           values=c('#008080', "#d57d2c")) +
-      scale_fill_manual(name="Population",
-          breaks=c("Cold","Warm"),
-          labels=c("Cold","Warm"),
+      scale_fill_manual(name="species",
+          breaks=c("Podarcis_muralis","Podarcis_liolepis"),
+          labels=c("Podarcis muralis","Podarcis liolepis"),
           values=c('#00808050', "#d57d2c50")) +
       facet_wrap(. ~ metric,scales = "free") +
       coord_cartesian(xlim = c(1, NA)) +
@@ -95,11 +95,11 @@ length(samples_to_keep_accli)
 richness_accli <- as.matrix(beta_q0n$S)
 richness_accli <- as.dist(richness_accli[rownames(richness_accli) %in% samples_to_keep_accli,
                colnames(richness_accli) %in% samples_to_keep_accli])
-betadisper(richness_accli, subset_meta_accli$Population) %>% permutest(., pairwise = TRUE)
+betadisper(richness_accli, subset_meta_accli$species) %>% permutest(., pairwise = TRUE)
 ```
 
 ```{r beta_richness_permanova_accli, warning=FALSE, comments="", message=FALSE, results=TRUE}
-adonis2(richness_accli ~ Population,
+adonis2(richness_accli ~ species,
         data = subset_meta_accli %>% arrange(match(Tube_code,labels(richness_accli))),
         permutations = 999) %>%
         broom::tidy() %>%
@@ -111,11 +111,11 @@ adonis2(richness_accli ~ Population,
 neutral_accli <- as.matrix(beta_q1n$S)
 neutral_accli <- as.dist(neutral_accli[rownames(neutral_accli) %in% samples_to_keep_accli,
                colnames(neutral_accli) %in% samples_to_keep_accli])
-betadisper(neutral_accli, subset_meta_accli$Population) %>% permutest(., pairwise = TRUE)
+betadisper(neutral_accli, subset_meta_accli$species) %>% permutest(., pairwise = TRUE)
 ```
 
 ```{r beta_neutral_permanova_acclimation, warning=FALSE, comments="", message=FALSE, results=TRUE}
-adonis2(neutral_accli ~ Population,
+adonis2(neutral_accli ~ species,
         data = subset_meta_accli %>% arrange(match(Tube_code,labels(neutral_accli))),
         permutations = 999) %>%
         broom::tidy() %>%
@@ -127,11 +127,11 @@ adonis2(neutral_accli ~ Population,
 phylo_accli <- as.matrix(beta_q1p$S)
 phylo_accli <- as.dist(phylo_accli[rownames(phylo_accli) %in% samples_to_keep_accli,
                colnames(phylo_accli) %in% samples_to_keep_accli])
-betadisper(phylo_accli, subset_meta_accli$Population) %>% permutest(., pairwise = TRUE)
+betadisper(phylo_accli, subset_meta_accli$species) %>% permutest(., pairwise = TRUE)
 ```
 
 ```{r beta_phylo_permanova_accli, warning=FALSE, comments="", message=FALSE, results=TRUE}
-adonis2(phylo_accli ~ Population,
+adonis2(phylo_accli ~ species,
         data = subset_meta_accli %>% arrange(match(Tube_code,labels(phylo_accli))),
         permutations = 999) %>%
         broom::tidy() %>%
@@ -145,14 +145,14 @@ richness_accli %>%
   vegan::scores() %>%
   as_tibble(., rownames = "sample") %>%
   left_join(subset_meta_accli, by = join_by(sample == Tube_code))%>%
-  group_by(Population) %>%
+  group_by(species) %>%
   mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
   mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
   ungroup() %>%
-  ggplot(., aes(x=NMDS1,y=NMDS2, color=Population)) +
-  scale_color_manual(name="Population",
-                     breaks=c("Cold","Warm"),
-                     labels=c("Cold","Warm"),
+  ggplot(., aes(x=NMDS1,y=NMDS2, color=species)) +
+  scale_color_manual(name="species",
+                     breaks=c("Podarcis_muralis","Podarcis_liolepis"),
+                     labels=c("Podarcis muralis","Podarcis liolepis"),
                      values=c('#008080',"#d57d2c")) +
   scale_shape_manual(name="Type",
                      breaks=c("Cold_control", "Warm_control", "Cold_intervention"),
@@ -169,14 +169,14 @@ neutral_accli %>%
   vegan::scores() %>%
   as_tibble(., rownames = "sample") %>%
   left_join(subset_meta_accli, by = join_by(sample == Tube_code))%>%
-  group_by(Population) %>%
+  group_by(species) %>%
   mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
   mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
   ungroup() %>%
-  ggplot(., aes(x=NMDS1,y=NMDS2, color=Population, shape=type)) +
-  scale_color_manual(name="Population",
-                     breaks=c("Cold","Warm"),
-                     labels=c("Cold","Warm"),
+  ggplot(., aes(x=NMDS1,y=NMDS2, color=species, shape=type)) +
+  scale_color_manual(name="species",
+                     breaks=c("Podarcis_muralis","Podarcis_liolepis"),
+                     labels=c("Podarcis muralis","Podarcis liolepis"),
                      values=c('#008080',"#d57d2c")) +
   scale_shape_manual(name="Type",
                      breaks=c("Cold_control", "Warm_control", "Cold_intervention"),
@@ -193,14 +193,14 @@ phylo_accli %>%
   vegan::scores() %>%
   as_tibble(., rownames = "sample") %>%
   left_join(subset_meta_accli, by = join_by(sample == Tube_code))%>%
-  group_by(Population) %>%
+  group_by(species) %>%
   mutate(x_cen = mean(NMDS1, na.rm = TRUE)) %>%
   mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
   ungroup() %>%
-  ggplot(., aes(x=NMDS1,y=NMDS2, color=Population)) +
-  scale_color_manual(name="Population",
-                     breaks=c("Cold","Warm"),
-                     labels=c("Cold","Warm"),
+  ggplot(., aes(x=NMDS1,y=NMDS2, color=species)) +
+  scale_color_manual(name="species",
+                     breaks=c("Podarcis_muralis","Podarcis_liolepis"),
+                     labels=c("Podarcis muralis","Podarcis liolepis"),
                      values=c('#008080',"#d57d2c")) +
   scale_shape_manual(name="Type",
                      breaks=c("Cold_control", "Warm_control", "Cold_intervention"),
@@ -223,7 +223,7 @@ GIFTs_functions_community %>%
   as_tibble(., rownames = "sample") %>%
   left_join(sample_metadata, by = join_by(sample == Tube_code)) %>%
   filter(time_point=="Acclimation") %>%
-  group_by(Population) %>%
+  group_by(species) %>%
   summarise(MCI = mean(value), sd = sd(value))
 ```
 ```{r gitfs_functional_acclimation_3, warning=FALSE, comments="", message=FALSE}
@@ -234,8 +234,8 @@ MCI_element_acclimation<- GIFTs_functions_community %>%
   filter(time_point=="Acclimation")
 
 shapiro.test(MCI_element_acclimation$value) #normality test
-var.test(value ~ Population, data = MCI_element_acclimation)
-t.test(value ~ Population, data=MCI_element_acclimation, var.equal = TRUE)
+var.test(value ~ species, data = MCI_element_acclimation)
+t.test(value ~ species, data=MCI_element_acclimation, var.equal = TRUE)
 ```
 
 ### Differences in functional pathways
@@ -250,9 +250,9 @@ element_gift_acclimation<- element_gift %>%
 
 ```{r commun_wilcox_elem_acclimation, comment="", message=FALSE, warning=FALSE}
 significant_elements_acclimation <- element_gift_acclimation %>%
-  pivot_longer(-c(Tube_code,Population), names_to = "trait", values_to = "value") %>%
+  pivot_longer(-c(Tube_code,species), names_to = "trait", values_to = "value") %>%
   group_by(trait) %>%
-  summarise(p_value = wilcox.test(value ~ Population)$p.value) %>%
+  summarise(p_value = wilcox.test(value ~ species)$p.value) %>%
   mutate(p_adjust=p.adjust(p_value, method="BH")) %>%
   filter(p_adjust < 0.05)%>%
   rownames_to_column(., "Elements")  %>% 
@@ -267,7 +267,7 @@ element_gift_sig_acclimation <- element_gift_acclimation %>%
 
 difference_table_acclimation <- element_gift_sig_acclimation %>%
   select(-Tube_code) %>%
-  group_by(Population) %>%
+  group_by(species) %>%
   summarise(across(everything(), mean)) %>%
   t() %>%
   row_to_names(row_number = 1) %>%
@@ -276,8 +276,8 @@ difference_table_acclimation <- element_gift_sig_acclimation %>%
   rownames_to_column(., "Elements") %>%
   left_join(.,uniqueGIFT_db[c(1,3,4)],by = join_by(Elements == Code_element)) %>% 
   arrange(Function) %>% 
-  mutate(Difference=Cold-Warm)%>% 
-  mutate(group_color = ifelse(Difference <0, "Warm","Cold")) 
+  mutate(Difference=P.muralis-P.liolepis)%>% 
+  mutate(group_color = ifelse(Difference <0, "P.liolepis","P.muralis")) 
 ```
 
 ```{r commun_wilcox_elem_plot_acclimation, comment="", message=FALSE, warning=FALSE, fig.height=6, fig.width=12, fig.fullwidth=TRUE}
