@@ -183,7 +183,7 @@ adonis2(phylo ~ time_point*species,
 ```{r rda_accli_antib, comment="", message=FALSE, warning=FALSE}
 
 #Richness
-cca_ord <- capscale(formula = richness ~ subset_meta$time_point* subset_meta$Population)
+cca_ord <- capscale(formula = richness ~ subset_meta$time_point* subset_meta$species)
 CAP_df <- as.data.frame(vegan::scores(cca_ord, display = "sites")) %>%
   rownames_to_column('Tube_code') %>%
   left_join(subset_meta, by = 'Tube_code') %>%
@@ -196,9 +196,9 @@ biplot_scores <- as.data.frame(vegan::scores(cca_ord, display = "bp")) %>%
 biplot_scores$Variable <- recode(
   biplot_scores$Variable,
   "subset_meta$time_pointAntibiotics" = "Antibiotics",
-  "subset_meta$PopulationWarm" = "Warm population",
-  "subset_meta$time_pointAntibiotics:subset_meta$PopulationWarm" =
-    "Interaction Wam population"
+  "subset_meta$speciesPodarcis_liolepis" = "Podarcis_liolepis",
+  "subset_meta$time_pointAntibiotics:subset_meta$speciesPodarcis_liolepis" =
+    "Interaction Podarcis_liolepis"
 )
 
 CAP_df %>%
@@ -206,7 +206,7 @@ CAP_df %>%
   mutate(x_cen = mean(CAP1, na.rm = TRUE)) %>%
   mutate(y_cen = mean(CAP2, na.rm = TRUE)) %>%
   ungroup() %>%
-  ggplot(., aes(x=CAP1,y=CAP2, color=Population,shape = time_point)) +
+  ggplot(., aes(x=CAP1,y=CAP2, color=species,shape = time_point)) +
   scale_color_manual(values=c('#008080', "#d57d2c")) +
   scale_fill_manual(values=c('#00808050', "#d57d2c50")) +
   geom_point(size=2) +
@@ -220,7 +220,7 @@ CAP_df %>%
   theme_classic()
 
 #Neutral
-cca_ord <- capscale(formula = neutral ~ subset_meta$time_point* subset_meta$Population)
+cca_ord <- capscale(formula = neutral ~ subset_meta$time_point* subset_meta$species)
 CAP_df <- as.data.frame(vegan::scores(cca_ord, display = "sites")) %>%
   rownames_to_column('Tube_code') %>%
   left_join(subset_meta, by = 'Tube_code') %>%
@@ -271,9 +271,9 @@ biplot_scores <- as.data.frame(vegan::scores(cca_ord, display = "bp")) %>%
 biplot_scores$Variable <- recode(
   biplot_scores$Variable,
   "subset_meta$time_pointAntibiotics" = "Antibiotics",
-  "subset_meta$PopulationWarm" = "Warm population",
-  "subset_meta$time_pointAntibiotics:subset_meta$PopulationWarm" =
-    "Interaction Wam population"
+  "subset_meta$speciesPodarcis_liolepis" = "Podarcis_liolepis",
+  "subset_meta$time_pointAntibiotics:subset_meta$speciesPodarcis_liolepis" =
+    "Interaction Podarcis_liolepis"
 )
 
 CAP_df %>%
@@ -281,7 +281,7 @@ CAP_df %>%
   mutate(x_cen = mean(CAP1, na.rm = TRUE)) %>%
   mutate(y_cen = mean(CAP2, na.rm = TRUE)) %>%
   ungroup() %>%
-  ggplot(., aes(x=CAP1,y=CAP2, color=Population,shape = time_point)) +
+  ggplot(., aes(x=CAP1,y=CAP2, color=species,shape = time_point)) +
   scale_color_manual(values=c('#008080', "#d57d2c")) +
   scale_fill_manual(values=c('#00808050', "#d57d2c50")) +
   geom_point(size=2) +
@@ -295,7 +295,7 @@ CAP_df %>%
   theme_classic()
 ```
 
-# Does antibiotic administration remove the differences found in the two populations?
+# Does antibiotic administration remove the differences found in the two species?
 
 ## Alpha diversity
 

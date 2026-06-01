@@ -96,12 +96,12 @@ phylum_summary <- genome_counts_filt %>%
   summarise(relabun=sum(count))
 ```
 
-#### Cold and wet population
+#### Podarcis muralis
 ```{r taxonomy_phylum_summary_cold, warning=FALSE, comments="", message=FALSE}
 phylum_summary %>%
     left_join(sample_metadata, by = join_by(sample == Tube_code))  %>%
-    group_by(phylum, Population) %>%
-    filter(Population=="Cold_wet" & time_point=="Wild") %>%
+    group_by(phylum, species.y) %>%
+    filter(species.y=="Podarics_muralis" & time_point=="Wild") %>%
     summarise(total_mean=mean(relabun*100, na.rm=T),
               total_sd=sd(relabun*100, na.rm=T))  %>%
   filter(total_mean!=0) %>% 
@@ -111,12 +111,12 @@ phylum_summary %>%
     tt()
 ```
 
-#### Warm and dry population
+#### Podarcis liolepis
 ```{r taxonomy_phylum_summary_hot, warning=FALSE, comments="", message=FALSE}
 phylum_summary %>%
     left_join(sample_metadata, by = join_by(sample == Tube_code))  %>%
-    group_by(phylum, Population) %>%
-    filter(Population=="Hot_dry" & time_point=="Wild") %>%
+    group_by(phylum, species.y) %>%
+    filter(species.y=="Podarcis_liolepis" & time_point=="Wild") %>%
     summarise(total_mean=mean(relabun*100, na.rm=T),
               total_sd=sd(relabun*100, na.rm=T))  %>%
   filter(total_mean!=0) %>% 
