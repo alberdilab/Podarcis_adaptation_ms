@@ -83,8 +83,10 @@ respirometry_resp2 %>%
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
     facet_wrap(~ factor(type))+
     theme(legend.position="right")+
-    theme_classic()+
-    labs(x = "Time_point", y= "Normalized O2 consumption (ml/s/g)")
+    theme_minimal()+
+    labs(x = "Time_point", y= "Normalized O2 consumption (ml/s/g)")+
+    geom_signif(comparisons = list(c("0", "1"), c("0", "2"), c("1", "2")),
+              map_signif_level = TRUE)
 ```
 
 ```{r plot_1_1}
