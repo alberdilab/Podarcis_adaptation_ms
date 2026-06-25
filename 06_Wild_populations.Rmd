@@ -25,8 +25,8 @@ genome_counts_rel_fil<- genome_counts_filt %>%
   column_to_rownames(., "genome")
   
 genome_counts_rel_pa=1*(genome_counts_rel_fil>0)
-table_upset_analysis_cont=t(aggregate(t(genome_counts_rel_pa),by=list(subset_meta$species.y),FUN=sum)[,-1])
-colnames(table_upset_analysis_cont)=levels(as.factor(subset_meta$species.y))
+table_upset_analysis_cont=t(aggregate(t(genome_counts_rel_pa),by=list(subset_meta$species),FUN=sum)[,-1])
+colnames(table_upset_analysis_cont)=levels(as.factor(subset_meta$species))
 table_upset_analysis=(table_upset_analysis_cont>0)*1
 table_upset_analysis=data.frame(table_upset_analysis)
 table_upset_analysis=apply(table_upset_analysis,2,as.integer)

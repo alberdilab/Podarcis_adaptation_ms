@@ -78,8 +78,8 @@ alpha_div%>%
   ggplot(aes(y = value, x = time_point, color=species, fill=species)) +
   geom_boxplot(width = 0.5,alpha=0.5, outlier.shape = NA, show.legend = FALSE) +
   geom_jitter(width = 0.2,show.legend = FALSE) +
-  scale_color_manual(values=c('#008080', "#d57d2c")) +
-  scale_fill_manual(values=c('#008080', "#d57d2c")) +
+  scale_color_manual(values=c("#d57d2c",'#008080')) +
+  scale_fill_manual(values=c("#d57d2c50",'#00808050')) +
   facet_grid(metric ~ species, scales = "free_y", labeller = labeller(metric = label_map, type = label_map))+
   theme_classic() +
   theme(
@@ -342,8 +342,8 @@ alpha_div %>%
   ggplot(aes(y = value, x = species, color=species, fill=species)) +
   geom_boxplot(width = 0.5,alpha=0.5 ,outlier.shape = NA, show.legend = FALSE) +
   geom_jitter(width = 0.2, show.legend = FALSE) +
-  scale_color_manual(values=c('#008080', "#d57d2c")) +
-  scale_fill_manual(values=c('#008080', "#d57d2c")) +
+  scale_color_manual(values=c("#d57d2c",'#008080')) +
+  scale_fill_manual(values=c("#d57d2c50",'#00808050')) +
   stat_compare_means(method = "t.test", show.legend = F, size = 3, label.x = c(1.5))+
   facet_grid( ~ metric, scales = "free_y")+
   theme_classic() +
@@ -366,8 +366,8 @@ alpha_div %>%
    ggplot(aes(y = value, x = species, color=species, fill=species)) +
   geom_boxplot(width = 0.5,alpha=0.5 ,outlier.shape = NA, show.legend = FALSE) +
   geom_jitter(width = 0.2, show.legend = FALSE) +
-  scale_color_manual(values=c('#008080', "#d57d2c")) +
-      scale_fill_manual(values=c('#008080', "#d57d2c")) +
+  scale_color_manual(values=c("#d57d2c",'#008080')) +
+  scale_fill_manual(values=c("#d57d2c50",'#00808050')) +
   stat_compare_means(method = "wilcox.test", show.legend = F, size = 3, label.x = c(1.5))+
   facet_grid( ~ metric, scales = "free_y")+
       theme_classic() +
@@ -451,7 +451,7 @@ richness %>%
   mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
   ungroup() %>%
   ggplot(., aes(x=NMDS1,y=NMDS2, color=species)) +
-  scale_color_manual(values=c('#008080',"#d57d2c")) +
+  scale_color_manual(values=c("#d57d2c",'#008080')) +
   geom_point(size = 2) +
   geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
   labs(y = "NMDS2", x="NMDS1 \n Richness beta diversity") +
@@ -468,7 +468,7 @@ neutral %>%
   mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
   ungroup() %>%
   ggplot(., aes(x=NMDS1,y=NMDS2, color=species)) +
-  scale_color_manual(values=c('#008080',"#d57d2c")) +
+  scale_color_manual(values=c("#d57d2c",'#008080')) +
   geom_point(size = 2) +
   geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
   labs(y = "NMDS2", x = "NMDS1 \n Neutral beta diversity") +
@@ -485,7 +485,7 @@ phylo %>%
   mutate(y_cen = mean(NMDS2, na.rm = TRUE)) %>%
   ungroup() %>%
   ggplot(., aes(x=NMDS1,y=NMDS2, color=species)) +
-  scale_color_manual(values = c('#008080', "#d57d2c"))+
+  scale_color_manual(values = c("#d57d2c",'#008080'))+
   geom_point(size=2) +
   geom_segment(aes(x=x_cen, y=y_cen, xend=NMDS1, yend=NMDS2), alpha=0.2) +
   labs(y= element_blank (),x="NMDS1 \n Phylogenetic beta diversity") +

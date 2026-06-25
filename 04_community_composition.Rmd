@@ -22,7 +22,11 @@ merged_data <- genome_counts_filt %>%
   left_join(., genome_metadata, by = join_by(genome == genome)) %>% #append genome metadata
   left_join(., sample_metadata, by = join_by(sample == Tube_code)) %>% #append sample metadata
   filter(count > 0) %>% #filter 0 counts
-  filter(individual!="NA")
+  filter(individual!="NA") %>%
+  mutate(type = recode(type,
+                       "Control" = "Cold-control",
+                       "Treatment" = "Cold-intervention",
+                       "Hot_control" = "Warm-control"))
 
 ggplot(merged_data, aes(
   x = sample,
@@ -100,8 +104,8 @@ phylum_summary <- genome_counts_filt %>%
 ```{r taxonomy_phylum_summary_cold, warning=FALSE, comments="", message=FALSE}
 phylum_summary %>%
     left_join(sample_metadata, by = join_by(sample == Tube_code))  %>%
-    group_by(phylum, species.y) %>%
-    filter(species.y=="Podarics_muralis" & time_point=="Wild") %>%
+    group_by(phylum, species) %>%
+    filter(species=="Podarcis_muralis" & time_point=="Wild") %>%
     summarise(total_mean=mean(relabun*100, na.rm=T),
               total_sd=sd(relabun*100, na.rm=T))  %>%
   filter(total_mean!=0) %>% 
@@ -115,8 +119,8 @@ phylum_summary %>%
 ```{r taxonomy_phylum_summary_hot, warning=FALSE, comments="", message=FALSE}
 phylum_summary %>%
     left_join(sample_metadata, by = join_by(sample == Tube_code))  %>%
-    group_by(phylum, species.y) %>%
-    filter(species.y=="Podarcis_liolepis" & time_point=="Wild") %>%
+    group_by(phylum, species) %>%
+    filter(species=="Podarcis_liolepis" & time_point=="Wild") %>%
     summarise(total_mean=mean(relabun*100, na.rm=T),
               total_sd=sd(relabun*100, na.rm=T))  %>%
   filter(total_mean!=0) %>% 

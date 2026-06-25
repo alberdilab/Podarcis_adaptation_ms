@@ -999,7 +999,7 @@ summary(res.aov)
 
 ***Functional differences***
 
-CC and CI
+Cold-control and Cold-intervention
 ```{r comunity_elem_7_1, comment="", message=FALSE, warning=FALSE}
 element_gift %>%
   filter(type %in% c("Cold_control", "Cold_intervention") & time_point == "FMT1") %>%
@@ -1017,7 +1017,7 @@ element_gift %>%
   remove_rownames()
 ```
 
-CI and WC
+Cold-intervention and Warm-control
 ```{r comunity_elem_CI_WC, comment="", message=FALSE, warning=FALSE}
 element_gift %>%
   filter(type %in% c("Warm_control", "Cold_intervention") &
@@ -1034,7 +1034,7 @@ element_gift %>%
   remove_rownames()
 ```
 
-CC and WC
+Cold-control and Warm-control
 ```{r comunity_elem_CC_WC, comment="", message=FALSE, warning=FALSE}
 element_gift %>%
   filter(type %in% c("Warm_control", "Cold_control") &
@@ -1296,7 +1296,7 @@ summary(res.aov)
 
 ***Functional differences***
 
-CC and CI
+Cold-control and Cold-intervention
 ```{r comunity_elem_FMT2_cold, comment="", message=FALSE, warning=FALSE}
 significant_elements<-element_gift %>%
   filter(type %in% c("Cold_control", "Cold_intervention") & time_point == "FMT2") %>%
@@ -1357,7 +1357,7 @@ difference_table %>%
   ylab("Mean difference")
 ```
 
-CI and WC
+Cold-intervention and Warm-control
 ```{r comunity_elem_FMT2_warm, comment="", message=FALSE, warning=FALSE}
 element_gift %>%
   filter(type %in% c("Warm_control", "Cold_intervention") &
@@ -1374,7 +1374,7 @@ element_gift %>%
   remove_rownames()
 ```
 
-CC and WC
+Cold-control and Warm-control
 ```{r comunity_elem_FMT2_control, comment="", message=FALSE, warning=FALSE}
 element_gift %>%
   filter(type %in% c("Warm_control", "Cold_control") &
