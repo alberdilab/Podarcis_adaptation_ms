@@ -34,6 +34,7 @@ recovered-microbial-fraction
 domain-adjusted-mapping-rate-damr
 mag-catalogue
 genome-phylogeny
+catalogue-summary
 genome-quality-1
 functional-overview
 predicted-genes
@@ -87,6 +88,7 @@ beta-diversity-5
 differences-between-acclimation-and-fmt1-across-the-three-experimental-groups
 beta-diversity-6
 functional-differences
+paired-functional-trait-tests-same-individuals
 differences-between-fmt1-and-fmt2-across-the-three-experimental-groups
 functional-differences-1
 what-are-the-differences-at-fmt1-between-groups
@@ -100,13 +102,18 @@ shapiro-test-3
 alpha-diversity-7
 beta-diversity-8
 functional-differences-3
+summary-of-functional-trait-counts-cited-in-the-manuscript
 physiological-measurements
 respirometry
+exclusions-and-sample-sizes
 acclimation-oxygen-consumption
+acclimation-cold-vs-warm-wilcoxon-test
 time-point-oxygen-consumption
 data-modelling
 ci-from-acclimation-to-post-fmt
 cc-from-acclimation-to-post-fmt
 wc-from-acclimation-to-post-fmt
+s3-s5-per-group-models-full-precision-and-tukey-contrasts
 cc-vs-ci-raw-data-modelling-lmm
 ci-vs-wc-raw-data-modelling-lmm
+group-x-time-point-interaction-models

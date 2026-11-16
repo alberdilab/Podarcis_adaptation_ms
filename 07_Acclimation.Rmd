@@ -76,6 +76,30 @@ alpha_div %>%
   ylab("Alpha diversity")
 ```
 
+```{r alpha_div_tests_accli, comment="", message=FALSE, warning=FALSE}
+# Species comparison of alpha diversity after acclimation. The figure uses the Welch t-test
+# (ggpubr default); Student t-test, variance test and Wilcoxon test are given for reference.
+# Manuscript: warm-adapted higher diversity (p < 0.05, Supplementary Fig. S1); phylogenetic t-test p = 0.072
+alpha_accli <- alpha_div %>%
+  pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
+  left_join(., sample_metadata, by = join_by(sample == Tube_code)) %>%
+  filter(time_point == "Acclimation")
+
+alpha_accli %>%
+  group_by(metric) %>%
+  summarise(n = n(),
+            mean_liolepis = mean(value[species == "Podarcis_liolepis"]),
+            mean_muralis = mean(value[species == "Podarcis_muralis"]),
+            shapiro_p = shapiro.test(value)$p.value,
+            var_test_p = var.test(value ~ species)$p.value,
+            welch_t = t.test(value ~ species)$statistic,
+            welch_p = t.test(value ~ species)$p.value,
+            student_p = t.test(value ~ species, var.equal = TRUE)$p.value,
+            wilcoxon_p = wilcox.test(value ~ species)$p.value) %>%
+  mutate(across(where(is.numeric), ~ signif(., 4))) %>%
+  tt()
+```
+
 ## Beta diversity
 
 Number of samples used
@@ -90,18 +114,32 @@ subset_meta_accli <- sample_metadata %>%
 length(samples_to_keep_accli)
 ```
 
+```{r dispersion_helper_accli, warning=FALSE, comments="", message=FALSE}
+# Homogeneity of multivariate dispersion: betadisper + permutest, 9,999 permutations, set.seed(123).
+# Identical to supplementary_tables/table_S10_dispersion.R (same sample order, seed and call).
+disp_test <- function(beta_obj, meta, group) {
+  M <- as.matrix(beta_obj$S)
+  ids <- meta$Tube_code[meta$Tube_code %in% rownames(M)]
+  d <- as.dist(M[ids, ids])
+  dat <- meta[match(labels(d), meta$Tube_code), ]
+  set.seed(123)
+  permutest(betadisper(d, factor(dat[[group]])), pairwise = TRUE, permutations = 9999)
+}
+```
+
 ***Richness***
 ```{r beta_richness_permanova_1_accli, warning=FALSE, comments="", message=FALSE}
 richness_accli <- as.matrix(beta_q0n$S)
 richness_accli <- as.dist(richness_accli[rownames(richness_accli) %in% samples_to_keep_accli,
                colnames(richness_accli) %in% samples_to_keep_accli])
-betadisper(richness_accli, subset_meta_accli$species) %>% permutest(., pairwise = TRUE)
+disp_test(beta_q0n, subset_meta_accli, "species")
 ```
 
 ```{r beta_richness_permanova_accli, warning=FALSE, comments="", message=FALSE, results=TRUE}
+set.seed(123)
 adonis2(richness_accli ~ species,
         data = subset_meta_accli %>% arrange(match(Tube_code,labels(richness_accli))),
-        permutations = 999) %>%
+        permutations = 9999) %>%
         broom::tidy() %>%
         tt()
 ```
@@ -111,13 +149,14 @@ adonis2(richness_accli ~ species,
 neutral_accli <- as.matrix(beta_q1n$S)
 neutral_accli <- as.dist(neutral_accli[rownames(neutral_accli) %in% samples_to_keep_accli,
                colnames(neutral_accli) %in% samples_to_keep_accli])
-betadisper(neutral_accli, subset_meta_accli$species) %>% permutest(., pairwise = TRUE)
+disp_test(beta_q1n, subset_meta_accli, "species")
 ```
 
 ```{r beta_neutral_permanova_acclimation, warning=FALSE, comments="", message=FALSE, results=TRUE}
+set.seed(123)
 adonis2(neutral_accli ~ species,
         data = subset_meta_accli %>% arrange(match(Tube_code,labels(neutral_accli))),
-        permutations = 999) %>%
+        permutations = 9999) %>%
         broom::tidy() %>%
         tt()
 ```
@@ -127,13 +166,14 @@ adonis2(neutral_accli ~ species,
 phylo_accli <- as.matrix(beta_q1p$S)
 phylo_accli <- as.dist(phylo_accli[rownames(phylo_accli) %in% samples_to_keep_accli,
                colnames(phylo_accli) %in% samples_to_keep_accli])
-betadisper(phylo_accli, subset_meta_accli$species) %>% permutest(., pairwise = TRUE)
+disp_test(beta_q1p, subset_meta_accli, "species")
 ```
 
 ```{r beta_phylo_permanova_accli, warning=FALSE, comments="", message=FALSE, results=TRUE}
+set.seed(123)
 adonis2(phylo_accli ~ species,
         data = subset_meta_accli %>% arrange(match(Tube_code,labels(phylo_accli))),
-        permutations = 999) %>%
+        permutations = 9999) %>%
         broom::tidy() %>%
         tt()
 ```
@@ -278,6 +318,38 @@ difference_table_acclimation <- element_gift_sig_acclimation %>%
   arrange(Function) %>% 
   mutate(Difference=Podarcis_muralis-Podarcis_liolepis)%>% 
   mutate(group_color = ifelse(Difference <0, "Podarcis_liolepis","Podarcis_muralis")) 
+```
+
+```{r acclimation_trait_counts, comment="", message=FALSE, warning=FALSE}
+# Functional traits (GIFT elements) differing between species after acclimation (Wilcoxon, BH p < 0.05).
+# Manuscript: 16 traits; six shared with the wild comparison; GABA and glutamate biosynthesis enriched in warm-adapted (P. liolepis).
+cat("Significant traits after acclimation (BH p < 0.05):", nrow(significant_elements_acclimation), "\n")
+cat("Enriched in P. muralis (cold-adapted):", sum(difference_table_acclimation$Difference > 0), "\n")
+cat("Enriched in P. liolepis (warm-adapted):", sum(difference_table_acclimation$Difference < 0), "\n")
+
+# Wild comparison, recomputed with the same test so this chunk is self-contained
+element_gift_wild_ref <- element_gift %>%
+  filter(time_point == "Wild") %>%
+  select(-time_point, -type) %>%
+  filter(rowSums(across(where(is.numeric), ~ . != 0)) > 0) %>%
+  select(Tube_code, where( ~ is.numeric(.) && sum(.) > 0)) %>%
+  left_join(sample_metadata[c(1, 3)], by = "Tube_code")
+significant_elements_wild_ref <- element_gift_wild_ref %>%
+  pivot_longer(-c(Tube_code, species), names_to = "trait", values_to = "value") %>%
+  group_by(trait) %>%
+  summarise(p_value = wilcox.test(value ~ species)$p.value) %>%
+  mutate(p_adjust = p.adjust(p_value, method = "BH")) %>%
+  filter(p_adjust < 0.05)
+cat("Significant traits in the wild (BH p < 0.05):", nrow(significant_elements_wild_ref), "\n")
+
+shared_traits <- intersect(significant_elements_acclimation$trait, significant_elements_wild_ref$trait)
+cat("Traits significant in both wild and acclimation:", length(shared_traits), "\n")
+difference_table_acclimation %>%
+  mutate(shared_with_wild = Elements %in% shared_traits,
+         Difference = round(Difference, 4)) %>%
+  select(Elements, Function, Difference, group_color, shared_with_wild) %>%
+  arrange(desc(shared_with_wild), group_color, Function) %>%
+  tt()
 ```
 
 ```{r commun_wilcox_elem_plot_acclimation, comment="", message=FALSE, warning=FALSE, fig.height=6, fig.width=12, fig.fullwidth=TRUE}

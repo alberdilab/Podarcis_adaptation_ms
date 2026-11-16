@@ -1,6 +1,6 @@
 ---
 title: "AlberdiLab | Martin-Bideguren et al. 2026"
-subtitle: "Interspecific faecal microbiota transplantation tests microbial contributions to thermal physiology in lizards"
+subtitle: "Interspecific faecal microbiota transplantation reshapes the gut microbiome of lizards but yields inconclusive effects on thermal physiology"
 author:
   - Garazi Martin-Bideguren^[University of Copenhagen, garazi.bideguren@sund.ku.dk],Carlos Cabido^[Sociedad de Ciencias Aranzadi-Departamento de Herpetología, ccabido@aranzadi.eus], Kevin Kohl^[University of Pittsburgh, kkohl78@gmail.com],Antton Alberdi^[University of Copenhagen, antton.alberdi@sund.ku.dk] and Ostaizka Aizpurua^[University of Copenhagen, ostaizka.aizpurua@sund.ku.dk]
 date: "Last update: `r Sys.Date()`"

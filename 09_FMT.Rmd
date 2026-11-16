@@ -71,6 +71,45 @@ emmeans::emmeans(Model_phylo, pairwise ~ type)
 emmeans::emmeans(Model_phylo, pairwise ~ time_point)
 ```
 
+***Pairwise comparisons between time-points within each group***
+
+Post-hoc contrasts of the neutral diversity model (Tukey-adjusted p-values), used for the brackets in Figure 3a of the manuscript.
+
+```{r alpha_div_contrasts_within_type, comment="", message=FALSE, warning=FALSE}
+emmeans::emmeans(Modelq1n, pairwise ~ time_point | type, adjust = "tukey")$contrasts
+```
+
+***Between-group contrasts at each time-point (Supplementary Table S8)***
+
+Estimated marginal means of the neutral diversity model (`Modelq1n`), compared between groups within each time-point, with Tukey adjustment over the three contrasts of each time-point. Groups in the data are `Cold_control` (CC, Control in the figure script), `Cold_intervention` (CI, Treatment) and `Warm_control` (WC, Hot_control). The table reports first minus second group in the order CC, CI, WC (CC - WC, CI - WC, CI - CC), i.e. the sign of the CC - CI contrast returned by `pairs()` is reversed. The last row is the unadjusted contrast between cold-intervention at FMT2 and warm-control at acclimation.
+
+```{r table_S8_alpha_between_groups, comment="", message=FALSE, warning=FALSE}
+emm_type_time <- emmeans::emmeans(Modelq1n, ~ type | time_point)
+table_S8 <- as.data.frame(pairs(emm_type_time, adjust = "tukey")) %>%
+  mutate(flip = contrast == "Cold_control - Cold_intervention",
+         estimate = ifelse(flip, -estimate, estimate),
+         t.ratio = ifelse(flip, -t.ratio, t.ratio),
+         contrast = recode(contrast,
+                           "Cold_control - Warm_control" = "CC - WC",
+                           "Cold_intervention - Warm_control" = "CI - WC",
+                           "Cold_control - Cold_intervention" = "CI - CC")) %>%
+  select(time_point, contrast, estimate, SE, df, t.ratio, p.value) %>%
+  arrange(factor(time_point, levels = c("Acclimation", "FMT1", "FMT2")),
+          factor(contrast, levels = c("CC - WC", "CI - WC", "CI - CC")))
+
+emm_all <- emmeans::emmeans(Modelq1n, ~ type * time_point)
+emm_grid <- as.data.frame(emm_all)
+w <- as.numeric(emm_grid$type == "Cold_intervention" & emm_grid$time_point == "FMT2") -
+     as.numeric(emm_grid$type == "Warm_control" & emm_grid$time_point == "Acclimation")
+last_row <- as.data.frame(emmeans::contrast(emm_all, list("CI(FMT2) - WC(Acclimation)" = w), adjust = "none")) %>%
+  transmute(time_point = "FMT2 (CI) vs Acclimation (WC)", contrast, estimate, SE, df, t.ratio, p.value)
+
+bind_rows(table_S8, last_row) %>%
+  mutate(across(c(estimate, SE, t.ratio), ~ round(., 2)),
+         p.value = signif(p.value, 3)) %>%
+  tt()
+```
+
 #### Beta diversity
 
 ***Number of samples used***
@@ -87,18 +126,84 @@ subset_meta_post7$type<-as.factor(subset_meta_post7$type)
 length(samples_to_keep_post7)
 ```
 
+***Repeated-measures tests (same individuals at Acclimation, FMT1 and FMT2)***
+
+The legacy `adonis2(d ~ type*time_point, strata = individual)` calls below cannot test the between-individual `type` term and their within-individual permutations of raw data are anti-conservative for the interaction. The manuscript instead reports (i) the type x time_point interaction with a distance-based Freedman-Lane test (residuals of the reduced model `~ type + time_point` permuted within individual; the adonis2 R2 of the interaction is reported alongside) and (ii) the between-individual `type` effect with a whole-plot test (group labels permuted across individuals).
+
+```{r repeated_measures_helpers, warning=FALSE, comments="", message=FALSE}
+# Euclidean embedding of a distance matrix (all positive eigenvalues of the Gower-centred matrix)
+fl_embed <- function(d) {
+  pc <- suppressWarnings(cmdscale(d, k = attr(d, "Size") - 1, eig = TRUE))  # warning: non-Euclidean distances, negative eigenvalues dropped
+  pc$points[, pc$eig[seq_len(ncol(pc$points))] > 1e-8, drop = FALSE]
+}
+# Residual sum of squares of Y after projecting on design X (QR based)
+fl_rss <- function(Y, X) { q <- qr(X); sum(qr.resid(q, Y)^2) }
+
+# (a) Distance-based Freedman-Lane test of the type x time_point interaction.
+# d: dist; meta: data frame with Tube_code, type, time_point, individual (matched to labels(d) by Tube_code).
+# Returns pseudo-F, partial R2 (SS_interaction / SS_total) and the permutation p value.
+fl_interaction_test <- function(d, meta, nperm = 9999) {
+  meta <- as.data.frame(meta)[match(labels(d), meta$Tube_code), ]
+  meta$type <- factor(meta$type); meta$time_point <- factor(meta$time_point)
+  Y <- fl_embed(d); n <- nrow(Y)
+  X0 <- model.matrix(~ type + time_point, meta)
+  X1 <- model.matrix(~ type * time_point, meta)
+  Fstat <- function(Yp) {
+    r0 <- fl_rss(Yp, X0); r1 <- fl_rss(Yp, X1)
+    ((r0 - r1) / (ncol(X1) - ncol(X0))) / (r1 / (n - ncol(X1)))
+  }
+  q0 <- qr(X0); fit0 <- qr.fitted(q0, Y); res0 <- qr.resid(q0, Y)
+  F_obs <- Fstat(Y)
+  ss_tot <- sum(scale(Y, scale = FALSE)^2)
+  R2 <- (fl_rss(Y, X0) - fl_rss(Y, X1)) / ss_tot
+  set.seed(123)
+  ctrl <- how(within = Within(type = "free"),
+              plots = Plots(strata = factor(meta$individual), type = "none"), nperm = nperm)
+  perms <- shuffleSet(n, nperm, control = ctrl)
+  Fp <- apply(perms, 1, function(p) Fstat(fit0 + res0[p, , drop = FALSE]))
+  tibble(test = "Freedman-Lane type x time_point (within-individual)", n = n,
+         F = F_obs, R2_partial = R2, p = (1 + sum(Fp >= F_obs - 1e-12)) / (1 + nperm))
+}
+
+# (b) Whole-plot test of the between-individual `type` effect after time_point:
+# individuals' group labels are permuted across individuals (each individual keeps its time points).
+wholeplot_type_test <- function(d, meta, nperm = 9999) {
+  meta <- as.data.frame(meta)[match(labels(d), meta$Tube_code), ]
+  meta$type <- factor(meta$type); meta$time_point <- factor(meta$time_point)
+  Y <- fl_embed(d); n <- nrow(Y)
+  ind <- factor(meta$individual)
+  ind_type <- meta$type[match(levels(ind), meta$individual)]
+  Xt <- model.matrix(~ time_point, meta)
+  Fty <- function(tp) {
+    ty <- tp[as.integer(ind)]
+    X1 <- cbind(Xt, model.matrix(~ ty)[, -1, drop = FALSE])
+    r0 <- fl_rss(Y, Xt); r1 <- fl_rss(Y, X1)
+    ((r0 - r1) / (ncol(X1) - ncol(Xt))) / (r1 / (n - ncol(X1)))
+  }
+  F_obs <- Fty(ind_type)
+  set.seed(123)
+  Fp <- replicate(nperm, Fty(sample(ind_type)))
+  tibble(test = "Whole-plot type (after time_point)", n = n, n_individuals = nlevels(ind),
+         F = F_obs, p = (1 + sum(Fp >= F_obs - 1e-12)) / (1 + nperm))
+}
+```
+
 ***Richness***
 ```{r beta_richness_permanova_post7_2_comparison, warning=FALSE, comments="", message=FALSE}
 richness_post7 <- as.matrix(beta_q0n$S)
 richness_post7 <- as.dist(richness_post7[rownames(richness_post7) %in% samples_to_keep_post7,
                colnames(richness_post7) %in% samples_to_keep_post7])
-betadisper(richness_post7, subset_meta_post7$type) %>% permutest(., pairwise = TRUE)
+set.seed(123)
+betadisper(richness_post7, subset_meta_post7$type[match(labels(richness_post7), subset_meta_post7$Tube_code)]) %>% permutest(., pairwise = TRUE, permutations = 9999)
 ```
 
 ```{r beta_richness_permanova_post7_1_comparison, warning=FALSE, comments="", message=FALSE}
+# LEGACY (not reported): adonis2 with strata = individual cannot test the between-individual `type` term and is anti-conservative for the interaction.
+# Use omnibus_group_by_time (Freedman-Lane interaction + whole-plot type test) below.
+set.seed(123)
 adonis2(richness_post7 ~ type*time_point,
         data = subset_meta_post7 %>% arrange(match(Tube_code,labels(richness_post7))),
-        permutations = 999,
+        permutations = 9999,
         strata = subset_meta_post7 %>% arrange(match(Tube_code,labels(richness_post7))) %>% pull(individual),
         by="terms") %>%
         broom::tidy() %>%
@@ -110,13 +215,17 @@ adonis2(richness_post7 ~ type*time_point,
 neutral_post7 <- as.matrix(beta_q1n$S)
 neutral_post7 <- as.dist(neutral_post7[rownames(neutral_post7) %in% samples_to_keep_post7,
                colnames(neutral_post7) %in% samples_to_keep_post7])
-betadisper(neutral_post7, subset_meta_post7$type) %>% permutest(., pairwise = TRUE)
+set.seed(123)
+betadisper(neutral_post7, subset_meta_post7$type[match(labels(neutral_post7), subset_meta_post7$Tube_code)]) %>% permutest(., pairwise = TRUE, permutations = 9999)
 ```
 
 ```{r beta_neutral_permanova_post7_1_comparison, warning=FALSE, comments="", message=FALSE}
+# LEGACY (not reported): adonis2 with strata = individual cannot test the between-individual `type` term and is anti-conservative for the interaction.
+# Use omnibus_group_by_time (Freedman-Lane interaction + whole-plot type test) below.
+set.seed(123)
 adonis2(neutral_post7 ~ type*time_point,
         data = subset_meta_post7 %>% arrange(match(Tube_code,labels(neutral_post7))),
-        permutations = 999,
+        permutations = 9999,
         strata = subset_meta_post7 %>% arrange(match(Tube_code,labels(neutral_post7))) %>% pull(individual),
         by="terms") %>%        
         broom::tidy() %>%
@@ -128,17 +237,38 @@ adonis2(neutral_post7 ~ type*time_point,
 phylo_post7 <- as.matrix(beta_q1p$S)
 phylo_post7 <- as.dist(phylo_post7[rownames(phylo_post7) %in% samples_to_keep_post7,
                colnames(phylo_post7) %in% samples_to_keep_post7])
-betadisper(phylo_post7, subset_meta_post7$type) %>% permutest(., pairwise = TRUE)
+set.seed(123)
+betadisper(phylo_post7, subset_meta_post7$type[match(labels(phylo_post7), subset_meta_post7$Tube_code)]) %>% permutest(., pairwise = TRUE, permutations = 9999)
 ```
 
 ```{r beta_phylo_permanova_post7_1_comparison, warning=FALSE, comments="", message=FALSE}
+# LEGACY (not reported): adonis2 with strata = individual cannot test the between-individual `type` term and is anti-conservative for the interaction.
+# Use omnibus_group_by_time (Freedman-Lane interaction + whole-plot type test) below.
+set.seed(123)
 adonis2(phylo_post7 ~ type*time_point,
         data = subset_meta_post7 %>% arrange(match(Tube_code,labels(phylo_post7))),
-        permutations = 999,
+        permutations = 9999,
         strata = subset_meta_post7 %>% arrange(match(Tube_code,labels(phylo_post7))) %>% pull(individual),
           by="terms") %>%        
         broom::tidy() %>%
         tt()
+```
+
+***Group x time (Freedman-Lane) and group (whole-plot) tests: reported in the manuscript***
+```{r omnibus_group_by_time, warning=FALSE, comments="", message=FALSE}
+omni_dist <- list(Richness = richness_post7, Neutral = neutral_post7, Phylogenetic = phylo_post7)
+omni_meta <- subset_meta_post7
+# adonis2 R2 of the interaction (legacy chunks above, same value; no strata needed for R2)
+omni_res <- imap_dfr(omni_dist, function(d, m) {
+  md <- omni_meta %>% arrange(match(Tube_code, labels(d)))
+  a <- adonis2(d ~ type * time_point, data = md, permutations = 0, by = "terms")
+  bind_rows(
+    fl_interaction_test(d, omni_meta, nperm = 9999) %>%
+      mutate(adonis2_R2_interaction = a$R2[3]),
+    wholeplot_type_test(d, omni_meta, nperm = 9999)) %>%
+    mutate(metric = m, .before = 1)
+})
+omni_res %>% mutate(across(where(is.numeric), ~ signif(., 4))) %>% tt()
 ```
 
 ***dbRDA***
@@ -290,9 +420,37 @@ ggarrange(beta_richness_nmds_post7, beta_neutral_nmds_post7, beta_phylogenetic_n
 beta_neutral_nmds_post7
 ```
 
+***Centroid trajectories (Figure 3b)***
+
+Group centroids are the mean dbRDA site scores of each experimental group at each time-point. In the manuscript figure the centroids are numbered (1, Acclimation; 2, FMT1; 3, FMT2) and joined by curved arrows that show the trajectory of each group.
+
+```{r dbrda_centroid_trajectories, comment="", message=FALSE, warning=FALSE}
+cca_neutral <- capscale(neutral_post7 ~ time_point * type,
+                        data = subset_meta_post7 %>% arrange(match(Tube_code, labels(neutral_post7))))
+vegan::scores(cca_neutral, display = "sites") %>%
+  as.data.frame() %>%
+  rownames_to_column("Tube_code") %>%
+  left_join(subset_meta_post7, by = "Tube_code") %>%
+  group_by(type, time_point) %>%
+  summarise(CAP1 = mean(CAP1), CAP2 = mean(CAP2), n = n(), .groups = "drop") %>%
+  tt()
+```
+
+***Manuscript Figure 3***
+
+Panels a and b of Figure 3 are drawn by `manuscript_figures/figure3/make_panels.R` (composed and exported with `manuscript_figures/figure3/build_figure3.py`), using the colour scheme of Figure 1.
+
+```{r figure3_manuscript, comment="", message=FALSE, warning=FALSE, results="hide"}
+source("manuscript_figures/figure3/make_panels.R")
+```
+
+```{r figure3_manuscript_show, echo=FALSE, out.width="100%"}
+knitr::include_graphics(c("manuscript_figures/figure3/fig3a.svg", "manuscript_figures/figure3/fig3b.svg"))
+```
+
 ```{r data_FMT_1, comment="", message=FALSE, warning=FALSE, echo=FALSE}
 load("data/data_03122025.Rdata")
-load("data/objects_16092025.Rdata")
+load("data/objects_03122025.Rdata")
 load("data/alpha_16092025.Rdata")
 load("data/beta_16092025.Rdata")
 ```
@@ -319,13 +477,15 @@ length(samples_to_keep)
 richness <- as.matrix(beta_q0n$S)
 richness <- as.dist(richness[rownames(richness) %in% samples_to_keep,
                colnames(richness) %in% samples_to_keep])
-betadisper(richness, subset_meta$time_point) %>% permutest(., pairwise = TRUE)
+set.seed(123)
+betadisper(richness, subset_meta$time_point[match(labels(richness), subset_meta$Tube_code)]) %>% permutest(., pairwise = TRUE, permutations = 9999)
 ```
 
 ```{r beta_div_accli_fmt1_ci_6, comment="", message=FALSE, warning=FALSE}
+set.seed(123)
 adonis2(richness ~ time_point,
         data = subset_meta %>% arrange(match(Tube_code,labels(richness))),
-        permutations = 999,
+        permutations = 9999,
         strata = subset_meta %>% arrange(match(Tube_code,labels(richness))) %>% pull(individual),
         by="terms") %>%
         broom::tidy() %>%
@@ -337,12 +497,15 @@ adonis2(richness ~ time_point,
 neutral <- as.matrix(beta_q1n$S)
 neutral <- as.dist(neutral[rownames(neutral) %in% samples_to_keep,
                colnames(neutral) %in% samples_to_keep])
-betadisper(neutral, subset_meta$time_point) %>% permutest(., pairwise = TRUE)
+set.seed(123)
+betadisper(neutral, subset_meta$time_point[match(labels(neutral), subset_meta$Tube_code)]) %>% permutest(., pairwise = TRUE, permutations = 9999)
 ```    
 
 ```{r beta_div_accli_fmt1_ci_5, comment="", message=FALSE, warning=FALSE}
+set.seed(123)
 adonis2(neutral ~ time_point,
         data = subset_meta %>% arrange(match(Tube_code,labels(neutral))),
+        permutations = 9999,
         strata = subset_meta %>% arrange(match(Tube_code,labels(neutral))) %>% pull(individual),
         by="terms") %>%
         broom::tidy() %>%
@@ -353,14 +516,16 @@ adonis2(neutral ~ time_point,
 phylo <- as.matrix(beta_q1p$S)
 phylo <- as.dist(phylo[rownames(phylo) %in% samples_to_keep,
                colnames(phylo) %in% samples_to_keep])
-betadisper(phylo, subset_meta$time_point) %>% permutest(., pairwise = TRUE)
+set.seed(123)
+betadisper(phylo, subset_meta$time_point[match(labels(phylo), subset_meta$Tube_code)]) %>% permutest(., pairwise = TRUE, permutations = 9999)
 
 ```   
 ```{r beta_div_accli_fmt1_ci_4, comment="", message=FALSE, warning=FALSE}
 
+set.seed(123)
 adonis2(phylo ~ time_point,
         data = subset_meta %>% arrange(match(Tube_code,labels(phylo))),
-        permutations = 999,
+        permutations = 9999,
         strata = subset_meta %>% arrange(match(Tube_code,labels(phylo))) %>% pull(individual),
         by="terms") %>%
         tt()
@@ -385,13 +550,15 @@ length(samples_to_keep)
 richness <- as.matrix(beta_q0n$S)
 richness <- as.dist(richness[rownames(richness) %in% samples_to_keep,
                colnames(richness) %in% samples_to_keep])
-betadisper(richness, subset_meta$time_point) %>% permutest(., pairwise = TRUE)
+set.seed(123)
+betadisper(richness, subset_meta$time_point[match(labels(richness), subset_meta$Tube_code)]) %>% permutest(., pairwise = TRUE, permutations = 9999)
 ```
 
 ```{r beta_div_accli_fmt1_cc_2, comment="", message=FALSE, warning=FALSE}
+set.seed(123)
 adonis2(richness ~ time_point,
         data = subset_meta %>% arrange(match(Tube_code,labels(richness))),
-        permutations = 999,
+        permutations = 9999,
         strata = subset_meta %>% arrange(match(Tube_code,labels(richness))) %>% pull(individual),
         by="terms") %>%
         broom::tidy() %>%
@@ -403,12 +570,15 @@ adonis2(richness ~ time_point,
 neutral <- as.matrix(beta_q1n$S)
 neutral <- as.dist(neutral[rownames(neutral) %in% samples_to_keep,
                colnames(neutral) %in% samples_to_keep])
-betadisper(neutral, subset_meta$time_point) %>% permutest(., pairwise = TRUE)
+set.seed(123)
+betadisper(neutral, subset_meta$time_point[match(labels(neutral), subset_meta$Tube_code)]) %>% permutest(., pairwise = TRUE, permutations = 9999)
 ```    
 
 ```{r beta_div_accli_fmt1_cc_4, comment="", message=FALSE, warning=FALSE}
+set.seed(123)
 adonis2(neutral ~ time_point,
         data = subset_meta %>% arrange(match(Tube_code,labels(neutral))),
+        permutations = 9999,
         strata = subset_meta %>% arrange(match(Tube_code,labels(neutral))) %>% pull(individual),
         by="terms") %>%
         broom::tidy() %>%
@@ -419,14 +589,16 @@ adonis2(neutral ~ time_point,
 phylo <- as.matrix(beta_q1p$S)
 phylo <- as.dist(phylo[rownames(phylo) %in% samples_to_keep,
                colnames(phylo) %in% samples_to_keep])
-betadisper(phylo, subset_meta$time_point) %>% permutest(., pairwise = TRUE)
+set.seed(123)
+betadisper(phylo, subset_meta$time_point[match(labels(phylo), subset_meta$Tube_code)]) %>% permutest(., pairwise = TRUE, permutations = 9999)
 
 ```   
 ```{r beta_div_accli_fmt1_cc_6, comment="", message=FALSE, warning=FALSE}
 
+set.seed(123)
 adonis2(phylo ~ time_point,
         data = subset_meta %>% arrange(match(Tube_code,labels(phylo))),
-        permutations = 999,
+        permutations = 9999,
         strata = subset_meta %>% arrange(match(Tube_code,labels(phylo))) %>% pull(individual),
         by="terms") %>%
         tt()
@@ -450,13 +622,15 @@ length(samples_to_keep)
 richness <- as.matrix(beta_q0n$S)
 richness <- as.dist(richness[rownames(richness) %in% samples_to_keep,
                colnames(richness) %in% samples_to_keep])
-betadisper(richness, subset_meta$time_point) %>% permutest(., pairwise = TRUE)
+set.seed(123)
+betadisper(richness, subset_meta$time_point[match(labels(richness), subset_meta$Tube_code)]) %>% permutest(., pairwise = TRUE, permutations = 9999)
 ```
 
 ```{r beta_div_accli_fmt1_wc_2, comment="", message=FALSE, warning=FALSE}
+set.seed(123)
 adonis2(richness ~ time_point,
         data = subset_meta %>% arrange(match(Tube_code,labels(richness))),
-        permutations = 999,
+        permutations = 9999,
         strata = subset_meta %>% arrange(match(Tube_code,labels(richness))) %>% pull(individual),
         by="terms") %>%
         broom::tidy() %>%
@@ -468,12 +642,15 @@ adonis2(richness ~ time_point,
 neutral <- as.matrix(beta_q1n$S)
 neutral <- as.dist(neutral[rownames(neutral) %in% samples_to_keep,
                colnames(neutral) %in% samples_to_keep])
-betadisper(neutral, subset_meta$time_point) %>% permutest(., pairwise = TRUE)
+set.seed(123)
+betadisper(neutral, subset_meta$time_point[match(labels(neutral), subset_meta$Tube_code)]) %>% permutest(., pairwise = TRUE, permutations = 9999)
 ```    
 
 ```{r beta_div_accli_fmt1_wc_4, comment="", message=FALSE, warning=FALSE}
+set.seed(123)
 adonis2(neutral ~ time_point,
         data = subset_meta %>% arrange(match(Tube_code,labels(neutral))),
+        permutations = 9999,
         strata = subset_meta %>% arrange(match(Tube_code,labels(neutral))) %>% pull(individual),
         by="terms") %>%
         broom::tidy() %>%
@@ -484,14 +661,16 @@ adonis2(neutral ~ time_point,
 phylo <- as.matrix(beta_q1p$S)
 phylo <- as.dist(phylo[rownames(phylo) %in% samples_to_keep,
                colnames(phylo) %in% samples_to_keep])
-betadisper(phylo, subset_meta$time_point) %>% permutest(., pairwise = TRUE)
+set.seed(123)
+betadisper(phylo, subset_meta$time_point[match(labels(phylo), subset_meta$Tube_code)]) %>% permutest(., pairwise = TRUE, permutations = 9999)
 
 ```   
 ```{r beta_div_accli_fmt1_wc_6, comment="", message=FALSE, warning=FALSE}
 
+set.seed(123)
 adonis2(phylo ~ time_point,
         data = subset_meta %>% arrange(match(Tube_code,labels(phylo))),
-        permutations = 999,
+        permutations = 9999,
         strata = subset_meta %>% arrange(match(Tube_code,labels(phylo))) %>% pull(individual),
         by="terms") %>%
         tt()
@@ -501,7 +680,49 @@ adonis2(phylo ~ time_point,
 
 ### Functional differences
 
+### Paired functional-trait tests (same individuals)
+
+```{r paired_trait_tests_acc_fmt1, comment="", message=FALSE, warning=FALSE}
+# Paired Wilcoxon signed-rank test per trait, pairing by individual (only individuals with both time points),
+# same trait filtering as the unpaired chunks (samples with any non-zero trait, traits with sum > 0 within the group and time points),
+# Benjamini-Hochberg across traits within each contrast.
+# Unpaired counts (wilcox.test(value ~ time_point) + BH) are shown for comparison: exploratory, they treat samples as independent.
+paired_trait_test <- function(ty, tp_a, tp_b) {
+  long <- element_gift %>%
+    filter(time_point %in% c(tp_a, tp_b) & type == ty) %>%
+    select(-time_point, -type) %>%
+    filter(rowSums(across(where(is.numeric), ~ . != 0)) > 0) %>%
+    select(Tube_code, where(~ is.numeric(.) && sum(.) > 0)) %>%
+    left_join(sample_metadata[c("Tube_code", "time_point", "individual")], by = "Tube_code") %>%
+    pivot_longer(-c(Tube_code, time_point, individual), names_to = "trait", values_to = "value")
+  pu <- long %>% group_by(trait) %>%
+    summarise(p = wilcox.test(value ~ time_point)$p.value, .groups = "drop") %>%
+    mutate(p_adj = p.adjust(p, "BH"))
+  w <- long %>% select(-Tube_code) %>%
+    pivot_wider(names_from = time_point, values_from = value, values_fn = mean) %>%
+    filter(!is.na(.data[[tp_a]]), !is.na(.data[[tp_b]]))
+  n_pairs <- n_distinct(w$individual)
+  pp <- w %>% group_by(trait) %>%
+    summarise(p = tryCatch(wilcox.test(.data[[tp_a]], .data[[tp_b]], paired = TRUE, exact = FALSE)$p.value,
+                           error = function(e) NA_real_), .groups = "drop") %>%
+    mutate(p_adj = p.adjust(p, "BH"))
+  tibble(contrast = paste0(c(Cold_control = "CC", Cold_intervention = "CI", Warm_control = "WC")[[ty]], ": ", tp_a, " vs ", tp_b),
+         n_paired = n_pairs,
+         n_sig_paired_BH = sum(pp$p_adj < 0.05, na.rm = TRUE),
+         min_p_paired = min(pp$p, na.rm = TRUE),
+         min_p_adj_paired = min(pp$p_adj, na.rm = TRUE),
+         min_attainable_exact_p = 2 / 2^n_pairs,
+         n_sig_unpaired_BH_exploratory = sum(pu$p_adj < 0.05, na.rm = TRUE))
+}
+paired_trait_results <- bind_rows(
+  map_dfr(c("Cold_control", "Cold_intervention", "Warm_control"), paired_trait_test, tp_a = "Acclimation", tp_b = "FMT1"),
+  map_dfr(c("Cold_control", "Cold_intervention", "Warm_control"), paired_trait_test, tp_a = "FMT1", tp_b = "FMT2"))
+paired_trait_results %>% mutate(across(where(is.numeric) & !c(n_paired, n_sig_paired_BH, n_sig_unpaired_BH_exploratory), ~ signif(., 3))) %>% tt()
+```
+
 ***CI from acclimation to FMT1***
+
+*Exploratory: the unpaired rank-sum tests and plots in this section treat samples as independent (see `paired_trait_tests_acc_fmt1` above for the paired tests).*
 
 ```{r comunity_elem_FMT3_cold_1, comment="", message=FALSE, warning=FALSE}
 significant_element<-element_gift %>%
@@ -509,7 +730,7 @@ significant_element<-element_gift %>%
   select(-time_point, -type) %>%
   filter(rowSums(across(where(is.numeric), ~ . != 0)) > 0) %>%
   select(Tube_code, where( ~ is.numeric(.) && sum(.) > 0)) %>%
-  left_join(sample_metadata[c(1, 8)], by = "Tube_code") %>% 
+  left_join(sample_metadata[c("Tube_code", "time_point")], by = "Tube_code") %>% 
   pivot_longer(-c(Tube_code, time_point),
                names_to = "trait",
                values_to = "value") %>%
@@ -527,7 +748,7 @@ element_gift_sig <- element_gift %>%
     significant_element$trait,
     colnames(element_gift)
   ))) %>%
-  left_join(., sample_metadata[c(1, 6, 8 )], by = join_by(Tube_code == Tube_code)) %>%
+  left_join(., sample_metadata[c("Tube_code", "type", "time_point")], by = join_by(Tube_code == Tube_code)) %>%
   filter(time_point %in% c("FMT1","Acclimation"))%>%
   filter(type=="Cold_intervention")
   
@@ -572,7 +793,7 @@ significant_element<-element_gift %>%
   select(-time_point, -type) %>%
   filter(rowSums(across(where(is.numeric), ~ . != 0)) > 0) %>%
   select(Tube_code, where( ~ is.numeric(.) && sum(.) > 0)) %>%
-  left_join(sample_metadata[c(1, 8)], by = "Tube_code") %>% 
+  left_join(sample_metadata[c("Tube_code", "time_point")], by = "Tube_code") %>% 
   pivot_longer(-c(Tube_code, time_point),
                names_to = "trait",
                values_to = "value") %>%
@@ -590,7 +811,7 @@ element_gift_sig <- element_gift %>%
     significant_element$trait,
     colnames(element_gift)
   ))) %>%
-  left_join(., sample_metadata[c(1, 6, 8)], by = join_by(Tube_code == Tube_code)) %>%
+  left_join(., sample_metadata[c("Tube_code", "type", "time_point")], by = join_by(Tube_code == Tube_code)) %>%
   filter(time_point %in% c("FMT1","Acclimation"))%>%
   filter(type=="Cold_control")
   
@@ -635,7 +856,7 @@ element_gift %>%
   select(-time_point, -type) %>%
   filter(rowSums(across(where(is.numeric), ~ . != 0)) > 0) %>%
   select(Tube_code, where( ~ is.numeric(.) && sum(.) > 0)) %>%
-  left_join(sample_metadata[c(1, 8)], by = "Tube_code") %>% 
+  left_join(sample_metadata[c("Tube_code", "time_point")], by = "Tube_code") %>% 
   pivot_longer(-c(Tube_code, time_point),
                names_to = "trait",
                values_to = "value") %>%
@@ -651,6 +872,8 @@ element_gift %>%
 
 ### Functional differences
 
+*Exploratory: the unpaired rank-sum tests and plots below treat samples as independent; paired FMT1 vs FMT2 tests are in `paired_trait_tests_acc_fmt1`.*
+
 ***CI from FMT1 to FMT2***
 
 ```{r comunity_elem_FMT3_cold_6, comment="", message=FALSE, warning=FALSE}
@@ -659,7 +882,7 @@ significant_element<-element_gift %>%
   select(-time_point, -type) %>%
   filter(rowSums(across(where(is.numeric), ~ . != 0)) > 0) %>%
   select(Tube_code, where( ~ is.numeric(.) && sum(.) > 0)) %>%
-  left_join(sample_metadata[c(1, 8)], by = "Tube_code") %>% 
+  left_join(sample_metadata[c("Tube_code", "time_point")], by = "Tube_code") %>% 
   pivot_longer(-c(Tube_code, time_point),
                names_to = "trait",
                values_to = "value") %>%
@@ -677,7 +900,7 @@ element_gift_sig <- element_gift %>%
     significant_element$trait,
     colnames(element_gift)
   ))) %>%
-  left_join(., sample_metadata[c(1, 6, 8)], by = join_by(Tube_code == Tube_code)) %>%
+  left_join(., sample_metadata[c("Tube_code", "type", "time_point")], by = join_by(Tube_code == Tube_code)) %>%
   filter(time_point %in% c("FMT2","FMT1"))%>%
   filter(type=="Cold_intervention")
   
@@ -722,7 +945,7 @@ element_gift %>%
   select(-time_point, -type) %>%
   filter(rowSums(across(where(is.numeric), ~ . != 0)) > 0) %>%
   select(Tube_code, where( ~ is.numeric(.) && sum(.) > 0)) %>%
-  left_join(sample_metadata[c(1, 8)], by = "Tube_code") %>% 
+  left_join(sample_metadata[c("Tube_code", "time_point")], by = "Tube_code") %>% 
   pivot_longer(-c(Tube_code, time_point),
                names_to = "trait",
                values_to = "value") %>%
@@ -742,7 +965,7 @@ element_gift %>%
   select(-time_point, -type) %>%
   filter(rowSums(across(where(is.numeric), ~ . != 0)) > 0) %>%
   select(Tube_code, where( ~ is.numeric(.) && sum(.) > 0)) %>%
-  left_join(sample_metadata[c(1, 8)], by = "Tube_code") %>% 
+  left_join(sample_metadata[c("Tube_code", "time_point")], by = "Tube_code") %>% 
   pivot_longer(-c(Tube_code, time_point),
                names_to = "trait",
                values_to = "value") %>%
@@ -841,13 +1064,15 @@ length(samples_to_keep_post1)
 richness_post1 <- as.matrix(beta_q0n$S)
 richness_post1 <- as.dist(richness_post1[rownames(richness_post1) %in% samples_to_keep_post1,
                colnames(richness_post1) %in% samples_to_keep_post1])
-betadisper(richness_post1, subset_meta_post1$type) %>% permutest(., pairwise = TRUE)
+set.seed(123)
+betadisper(richness_post1, subset_meta_post1$type[match(labels(richness_post1), subset_meta_post1$Tube_code)]) %>% permutest(., pairwise = TRUE, permutations = 9999)
 ```
 
 ```{r beta_richness_permanova_post1_1, warning=FALSE, comments="", message=FALSE}
+set.seed(123)
 adonis2(richness_post1 ~ type,
         data = subset_meta_post1 %>% arrange(match(Tube_code,labels(richness_post1))),
-        permutations = 999) %>%
+        permutations = 9999) %>%
         broom::tidy() %>%
         tt()
 ```
@@ -856,8 +1081,9 @@ adonis2(richness_post1 ~ type,
 subset_meta_post1_arrange <- column_to_rownames(subset_meta_post1, "Tube_code")
 subset_meta_post1_arrange<-subset_meta_post1_arrange[labels(richness_post1),]
 
-pairwise <- pairwise.adonis(richness_post1, subset_meta_post1_arrange$type, perm=999)
-pairwise%>%
+set.seed(123)
+pairwise_FMT1_richness <- pairwise.adonis(richness_post1, subset_meta_post1_arrange$type, perm=99999)
+pairwise_FMT1_richness%>%
   tt()
 ```
 
@@ -866,13 +1092,15 @@ pairwise%>%
 neutral_post1 <- as.matrix(beta_q1n$S)
 neutral_post1 <- as.dist(neutral_post1[rownames(neutral_post1) %in% samples_to_keep_post1,
                colnames(neutral_post1) %in% samples_to_keep_post1])
-betadisper(neutral_post1, subset_meta_post1$type) %>% permutest(., pairwise = TRUE)
+set.seed(123)
+betadisper(neutral_post1, subset_meta_post1$type[match(labels(neutral_post1), subset_meta_post1$Tube_code)]) %>% permutest(., pairwise = TRUE, permutations = 9999)
 ```
 
 ```{r beta_neutral_permanova_post1_1, warning=FALSE, comments="", message=FALSE}
+set.seed(123)
 adonis2(neutral_post1 ~ type,
         data = subset_meta_post1 %>% arrange(match(Tube_code,labels(neutral_post1))),
-        permutations = 999) %>%
+        permutations = 9999) %>%
         broom::tidy() %>%
         tt()
 ```
@@ -880,8 +1108,9 @@ adonis2(neutral_post1 ~ type,
 ```{r beta_neutral_permanova_post1_3, warning=FALSE, comments="", message=FALSE}
 subset_meta_post1_arrange <- column_to_rownames(subset_meta_post1, "Tube_code")
 subset_meta_post1_arrange<-subset_meta_post1_arrange[labels(neutral_post1),]
-pairwise <- pairwise.adonis(neutral_post1, subset_meta_post1_arrange$type, perm=999)
-pairwise%>%
+set.seed(123)
+pairwise_FMT1_neutral <- pairwise.adonis(neutral_post1, subset_meta_post1_arrange$type, perm=99999)
+pairwise_FMT1_neutral%>%
   tt()
 ```
 
@@ -890,13 +1119,15 @@ pairwise%>%
 phylo_post1 <- as.matrix(beta_q1p$S)
 phylo_post1 <- as.dist(phylo_post1[rownames(phylo_post1) %in% samples_to_keep_post1,
                colnames(phylo_post1) %in% samples_to_keep_post1])
-betadisper(phylo_post1, subset_meta_post1$type) %>% permutest(., pairwise = TRUE)
+set.seed(123)
+betadisper(phylo_post1, subset_meta_post1$type[match(labels(phylo_post1), subset_meta_post1$Tube_code)]) %>% permutest(., pairwise = TRUE, permutations = 9999)
 ```
 
 ```{r beta_phylo_permanova_post1_1, warning=FALSE, comments="", message=FALSE}
+set.seed(123)
 adonis2(phylo_post1 ~ type,
         data = subset_meta_post1 %>% arrange(match(Tube_code,labels(phylo_post1))),
-        permutations = 999) %>%
+        permutations = 9999) %>%
         broom::tidy() %>%
         tt()
 ```
@@ -904,8 +1135,35 @@ adonis2(phylo_post1 ~ type,
 ```{r beta_phylopermanova_post1_3, warning=FALSE, comments="", message=FALSE}
 subset_meta_post1_arrange <- column_to_rownames(subset_meta_post1, "Tube_code")
 subset_meta_post1_arrange<-subset_meta_post1_arrange[labels(phylo_post1),]
-pairwise <- pairwise.adonis(phylo_post1, subset_meta_post1_arrange$type, perm=999)
-pairwise%>%
+set.seed(123)
+pairwise_FMT1_phylo <- pairwise.adonis(phylo_post1, subset_meta_post1_arrange$type, perm=99999)
+pairwise_FMT1_phylo%>%
+  tt()
+```
+
+***Supplementary Table S1: pairwise PERMANOVA between the three groups at FMT1***
+
+All values of Supplementary Table S1, in the layout of the table (rows CI vs CC, CI vs WC, CC vs WC within each metric). `pairwise.adonis` with 99,999 permutations, `set.seed(123)` set in the chunks above; `p.adjusted` is the Bonferroni correction across the three pairs within each metric.
+
+```{r table_S1_pairwise_fmt1, comment="", message=FALSE, warning=FALSE}
+lab_pairs <- c("Cold_intervention vs Cold_control" = "CI vs CC",
+               "Cold_control vs Cold_intervention" = "CI vs CC",
+               "Cold_intervention vs Warm_control" = "CI vs WC",
+               "Warm_control vs Cold_intervention" = "CI vs WC",
+               "Cold_control vs Warm_control" = "CC vs WC",
+               "Warm_control vs Cold_control" = "CC vs WC")
+table_S1 <- bind_rows(
+  Richness = pairwise_FMT1_richness,
+  Neutral = pairwise_FMT1_neutral,
+  Phylogenetic = pairwise_FMT1_phylo,
+  .id = "Metric") %>%
+  mutate(pairs = unname(lab_pairs[pairs]),
+         pairs = factor(pairs, levels = c("CI vs CC", "CI vs WC", "CC vs WC"))) %>%
+  arrange(factor(Metric, levels = c("Richness", "Neutral", "Phylogenetic")), pairs) %>%
+  select(pairs, Metric, Df, SumsOfSqs, F.Model, R2, p.value, p.adjusted) %>%
+  mutate(across(c(SumsOfSqs, F.Model, R2), ~ round(., 3)),
+         across(c(p.value, p.adjusted), ~ ifelse(. < 0.001, "<0.001", sprintf("%.3f", .))))
+table_S1 %>%
   tt()
 ```
 
@@ -1006,7 +1264,7 @@ element_gift %>%
   select(-time_point, -type) %>%
   filter(rowSums(across(where(is.numeric), ~ . != 0)) > 0) %>%
   select(Tube_code, where( ~ is.numeric(.) && sum(.) > 0)) %>%
-  left_join(sample_metadata[c(1, 6)], by = "Tube_code") %>% 
+  left_join(sample_metadata[c("Tube_code", "type")], by = "Tube_code") %>% 
   pivot_longer(-c(Tube_code, type),
                names_to = "trait",
                values_to = "value") %>%
@@ -1025,7 +1283,7 @@ element_gift %>%
   select(-time_point, -type) %>%
   filter(rowSums(across(where(is.numeric), ~ . != 0)) > 0) %>%
   select(Tube_code, where(~ is.numeric(.) && sum(.) > 0)) %>%
-  left_join(sample_metadata[c(1, 6)], by = "Tube_code") %>% 
+  left_join(sample_metadata[c("Tube_code", "type")], by = "Tube_code") %>% 
   pivot_longer(-c(Tube_code,type), names_to = "trait", values_to = "value") %>%
   group_by(trait) %>%
   summarise(p_value = wilcox.test(value ~ type)$p.value) %>%
@@ -1042,7 +1300,7 @@ element_gift %>%
   select(-time_point, -type) %>%
   filter(rowSums(across(where(is.numeric), ~ . != 0)) > 0) %>%
   select(Tube_code, where(~ is.numeric(.) && sum(.) > 0)) %>%
-  left_join(sample_metadata[c(1, 6)], by = "Tube_code") %>%
+  left_join(sample_metadata[c("Tube_code", "type")], by = "Tube_code") %>%
   pivot_longer(-c(Tube_code,type), names_to = "trait", values_to = "value") %>%
   group_by(trait) %>%
   summarise(p_value = wilcox.test(value ~ type)$p.value) %>%
@@ -1139,13 +1397,15 @@ length(samples_to_keep_FMT2)
 richness_FMT2 <- as.matrix(beta_q0n$S)
 richness_FMT2 <- as.dist(richness_FMT2[rownames(richness_FMT2) %in% samples_to_keep_FMT2,
                colnames(richness_FMT2) %in% samples_to_keep_FMT2])
-betadisper(richness_FMT2, subset_meta_FMT2$type) %>% permutest(., pairwise = TRUE)
+set.seed(123)
+betadisper(richness_FMT2, subset_meta_FMT2$type[match(labels(richness_FMT2), subset_meta_FMT2$Tube_code)]) %>% permutest(., pairwise = TRUE, permutations = 9999)
 ```
 
 ```{r beta_richness_permanova_FMT2_1, warning=FALSE, comments="", message=FALSE}
+set.seed(123)
 adonis2(richness_FMT2 ~ type,
         data = subset_meta_FMT2 %>% arrange(match(Tube_code,labels(richness_FMT2))),
-        permutations = 999) %>%
+        permutations = 9999) %>%
         broom::tidy() %>%
         tt()
 ```
@@ -1154,8 +1414,9 @@ adonis2(richness_FMT2 ~ type,
 subset_meta_FMT2_arrange <- column_to_rownames(subset_meta_FMT2, "Tube_code")
 subset_meta_FMT2_arrange<-subset_meta_FMT2_arrange[labels(richness_FMT2),]
 
-pairwise <- pairwise.adonis(richness_FMT2, subset_meta_FMT2_arrange$type, perm=999)
-pairwise%>%
+set.seed(123)
+pairwise_FMT2_richness <- pairwise.adonis(richness_FMT2, subset_meta_FMT2_arrange$type, perm=99999)
+pairwise_FMT2_richness%>%
   tt()
 ```
 
@@ -1164,13 +1425,15 @@ pairwise%>%
 neutral_FMT2 <- as.matrix(beta_q1n$S)
 neutral_FMT2 <- as.dist(neutral_FMT2[rownames(neutral_FMT2) %in% samples_to_keep_FMT2,
                colnames(neutral_FMT2) %in% samples_to_keep_FMT2])
-betadisper(neutral_FMT2, subset_meta_FMT2$type) %>% permutest(., pairwise = TRUE)
+set.seed(123)
+betadisper(neutral_FMT2, subset_meta_FMT2$type[match(labels(neutral_FMT2), subset_meta_FMT2$Tube_code)]) %>% permutest(., pairwise = TRUE, permutations = 9999)
 ```
 
 ```{r beta_neutral_permanova_FMT2_1, warning=FALSE, comments="", message=FALSE}
+set.seed(123)
 adonis2(neutral_FMT2 ~ type,
         data = subset_meta_FMT2 %>% arrange(match(Tube_code,labels(neutral_FMT2))),
-        permutations = 999) %>%
+        permutations = 9999) %>%
         broom::tidy() %>%
         tt()
 ```
@@ -1178,8 +1441,9 @@ adonis2(neutral_FMT2 ~ type,
 ```{r beta_neutral_permanova_FMT2_3, warning=FALSE, comments="", message=FALSE}
 subset_meta_FMT2_arrange <- column_to_rownames(subset_meta_FMT2, "Tube_code")
 subset_meta_FMT2_arrange<-subset_meta_FMT2_arrange[labels(neutral_FMT2),]
-pairwise <- pairwise.adonis(neutral_FMT2, subset_meta_FMT2_arrange$type, perm=999)
-pairwise%>%
+set.seed(123)
+pairwise_FMT2_neutral <- pairwise.adonis(neutral_FMT2, subset_meta_FMT2_arrange$type, perm=99999)
+pairwise_FMT2_neutral%>%
   tt()
 ```
 
@@ -1188,22 +1452,151 @@ pairwise%>%
 phylo_FMT2 <- as.matrix(beta_q1p$S)
 phylo_FMT2 <- as.dist(phylo_FMT2[rownames(phylo_FMT2) %in% samples_to_keep_FMT2,
                colnames(phylo_FMT2) %in% samples_to_keep_FMT2])
-betadisper(phylo_FMT2, subset_meta_FMT2$type) %>% permutest(., pairwise = TRUE)
+set.seed(123)
+betadisper(phylo_FMT2, subset_meta_FMT2$type[match(labels(phylo_FMT2), subset_meta_FMT2$Tube_code)]) %>% permutest(., pairwise = TRUE, permutations = 9999)
 ```
 
 ```{r beta_phylo_permanova_FMT2_1, warning=FALSE, comments="", message=FALSE}
+set.seed(123)
 adonis2(phylo_FMT2 ~ type,
         data = subset_meta_FMT2 %>% arrange(match(Tube_code,labels(phylo_FMT2))),
-        permutations = 999) %>%
+        permutations = 9999) %>%
         broom::tidy() %>%
         tt()
 ```
 ```{r beta_phylo_permanova_FMT2_pair, warning=FALSE, comments="", message=FALSE}
 subset_meta_FMT2_arrange <- column_to_rownames(subset_meta_FMT2, "Tube_code")
 subset_meta_FMT2_arrange<-subset_meta_FMT2_arrange[labels(phylo_FMT2),]
-pairwise <- pairwise.adonis(phylo_FMT2, subset_meta_FMT2_arrange$type, perm=999)
-pairwise%>%
+set.seed(123)
+pairwise_FMT2_phylo <- pairwise.adonis(phylo_FMT2, subset_meta_FMT2_arrange$type, perm=99999)
+pairwise_FMT2_phylo%>%
   tt()
+```
+
+***Supplementary Table S2: pairwise PERMANOVA between the three groups at FMT2***
+
+All values of Supplementary Table S2, in the layout of the table (rows CI vs CC, CI vs WC, CC vs WC within each metric). `pairwise.adonis` with 99,999 permutations, `set.seed(123)` set in the chunks above; `p.adjusted` is the Bonferroni correction across the three pairs within each metric.
+
+```{r table_S2_pairwise_fmt2, comment="", message=FALSE, warning=FALSE}
+lab_pairs <- c("Cold_intervention vs Cold_control" = "CI vs CC",
+               "Cold_control vs Cold_intervention" = "CI vs CC",
+               "Cold_intervention vs Warm_control" = "CI vs WC",
+               "Warm_control vs Cold_intervention" = "CI vs WC",
+               "Cold_control vs Warm_control" = "CC vs WC",
+               "Warm_control vs Cold_control" = "CC vs WC")
+table_S2 <- bind_rows(
+  Richness = pairwise_FMT2_richness,
+  Neutral = pairwise_FMT2_neutral,
+  Phylogenetic = pairwise_FMT2_phylo,
+  .id = "Metric") %>%
+  mutate(pairs = unname(lab_pairs[pairs]),
+         pairs = factor(pairs, levels = c("CI vs CC", "CI vs WC", "CC vs WC"))) %>%
+  arrange(factor(Metric, levels = c("Richness", "Neutral", "Phylogenetic")), pairs) %>%
+  select(pairs, Metric, Df, SumsOfSqs, F.Model, R2, p.value, p.adjusted) %>%
+  mutate(across(c(SumsOfSqs, F.Model, R2), ~ round(., 3)),
+         across(c(p.value, p.adjusted), ~ ifelse(. < 0.001, "<0.001", sprintf("%.3f", .))))
+table_S2 %>%
+  tt()
+```
+
+***Is the cold-intervention group closer to the warm-control (donor) group than the cold-control group at FMT1?***
+
+For each FMT1 sample of the cold-control and cold-intervention groups, the mean dissimilarity to all warm-control FMT1 samples is computed (neutral q = 1 dissimilarity, `beta_q1n$S`; richness `beta_q0n$S` and phylogenetic `beta_q1p$S` for completeness) and the two groups are compared with a Wilcoxon rank-sum test (normal approximation, `exact = FALSE`, because of ties/size).
+
+```{r distance_to_warm_control_fmt1, comment="", message=FALSE, warning=FALSE}
+dist_to_wc <- function(S, tp = "FMT1") {
+  D <- as.matrix(S)
+  meta_tp <- sample_metadata %>% filter(time_point == tp, Tube_code %in% rownames(D))
+  wc <- meta_tp %>% filter(type == "Warm_control") %>% pull(Tube_code)
+  meta_tp %>%
+    filter(type %in% c("Cold_control", "Cold_intervention")) %>%
+    rowwise() %>%
+    mutate(mean_dist_to_WC = mean(D[Tube_code, wc])) %>%
+    ungroup() %>%
+    select(Tube_code, type, mean_dist_to_WC)
+}
+distance_tests_fmt1 <- list(Richness = beta_q0n$S, Neutral = beta_q1n$S, Phylogenetic = beta_q1p$S) %>%
+  imap(function(S, metric) {
+    d <- dist_to_wc(S)
+    wt <- wilcox.test(mean_dist_to_WC ~ type, data = d, exact = FALSE)
+    d %>% group_by(type) %>% summarise(n = n(), median = median(mean_dist_to_WC), mean = mean(mean_dist_to_WC), .groups = "drop") %>%
+      pivot_wider(names_from = type, values_from = c(n, median, mean)) %>%
+      mutate(Metric = metric, W = unname(wt$statistic), p_value = wt$p.value, .before = 1)
+  }) %>%
+  bind_rows()
+distance_tests_fmt1 %>%
+  mutate(across(where(is.numeric), ~ round(., 3))) %>%
+  tt()
+```
+
+***Mean dissimilarity between groups (neutral, q = 1)***
+
+Mean of all between-sample neutral dissimilarities of each pair of groups at FMT1 and FMT2 (dbRDA centroids are given in chunk `dbrda_centroid_trajectories`). These values support the Discussion statements about the cold-intervention group moving towards, and then away from, the donor (warm-control) community.
+
+```{r mean_between_group_dissimilarity, comment="", message=FALSE, warning=FALSE}
+D_neutral <- as.matrix(beta_q1n$S)
+between_group_dissimilarity <- function(tp, g1, g2) {
+  a <- sample_metadata %>% filter(time_point == tp, type == g1, Tube_code %in% rownames(D_neutral)) %>% pull(Tube_code)
+  b <- sample_metadata %>% filter(time_point == tp, type == g2, Tube_code %in% rownames(D_neutral)) %>% pull(Tube_code)
+  tibble(time_point = tp, pair = paste(g1, "-", g2), n1 = length(a), n2 = length(b), mean_dissimilarity = mean(D_neutral[a, b]))
+}
+expand_grid(time_point = c("FMT1", "FMT2"),
+            pair = list(c("Cold_intervention", "Warm_control"), c("Cold_intervention", "Cold_control"), c("Cold_control", "Warm_control"))) %>%
+  pmap(function(time_point, pair) between_group_dissimilarity(time_point, pair[1], pair[2])) %>%
+  bind_rows() %>%
+  mutate(mean_dissimilarity = round(mean_dissimilarity, 3)) %>%
+  tt()
+```
+
+***Dispersion tests (Supplementary Table S10 rows for FMT1, FMT2 and acclimation vs FMT1)***
+
+Same tests as in `supplementary_tables/table_S10_dispersion.R` (betadisper + permutest, 9,999 permutations, `set.seed(123)` before each call), collected in one table: global F and p, and unadjusted pairwise permuted p-values for the three-group comparisons.
+
+```{r dispersion_table_fmt, comment="", message=FALSE, warning=FALSE}
+disp_metrics <- c(Richness = "beta_q0n", Neutral = "beta_q1n", Phylogenetic = "beta_q1p")
+disp_lab <- c(Cold_control = "CC", Cold_intervention = "CI", Warm_control = "WC")
+disp_run <- function(comparison, keep, grp) {
+  map_dfr(names(disp_metrics), function(m) {
+    M <- as.matrix(get(disp_metrics[[m]])$S)
+    ids <- keep$Tube_code[keep$Tube_code %in% rownames(M)]
+    d <- as.dist(M[ids, ids]); dat <- keep[match(labels(d), keep$Tube_code), ]
+    set.seed(123)
+    pt <- permutest(betadisper(d, factor(dat[[grp]])), pairwise = TRUE, permutations = 9999)
+    pr <- pt$pairwise$permuted
+    tibble(comparison = comparison, metric = m, n = nrow(dat),
+           F = round(pt$tab[1, "F"], 2), p = round(pt$tab[1, "Pr(>F)"], 3),
+           pairwise_p = if (length(pr) > 1) {
+             nm <- names(pr); for (k in names(disp_lab)) nm <- gsub(k, disp_lab[[k]], nm, fixed = TRUE)
+             paste(gsub("-", "\u2013", nm), sprintf("%.3f", pr), collapse = "; ")
+           } else "")
+  })
+}
+dispersion_fmt <- bind_rows(
+  disp_run("FMT1: experimental groups", sample_metadata %>% filter(time_point == "FMT1"), "type"),
+  disp_run("FMT2: experimental groups", sample_metadata %>% filter(time_point == "FMT2"), "type"),
+  map_dfr(names(disp_lab), function(ty)
+    disp_run(paste("Acclimation vs FMT1:", disp_lab[[ty]]),
+             sample_metadata %>% filter(time_point %in% c("Acclimation", "FMT1"), type == ty), "time_point")))
+dispersion_fmt %>% tt()
+```
+
+```{r paired_dispersion_acc_fmt1, comment="", message=FALSE, warning=FALSE}
+# Within-group dispersion, Acclimation vs FMT1, PAIRED: per individual, difference in distance to the group centroid
+# (betadisper distances, two time-point centroids) and Wilcoxon signed-rank test (exact when possible).
+# Reported in Table S10 (supplementary_tables/table_S10_dispersion.R) instead of the free permutest above (which permutes repeated observations as independent).
+paired_dispersion <- map_dfr(names(disp_lab), function(ty) map_dfr(names(disp_metrics), function(m) {
+  keep <- sample_metadata %>% filter(time_point %in% c("Acclimation", "FMT1"), type == ty)
+  M <- as.matrix(get(disp_metrics[[m]])$S)
+  ids <- keep$Tube_code[keep$Tube_code %in% rownames(M)]
+  d <- as.dist(M[ids, ids]); dat <- keep[match(labels(d), keep$Tube_code), ]
+  bd <- betadisper(d, factor(dat$time_point))
+  z <- tibble(ind = dat$individual, tp = dat$time_point, z = bd$distances) %>%
+    pivot_wider(names_from = tp, values_from = z, values_fn = mean) %>%
+    filter(!is.na(Acclimation), !is.na(FMT1))
+  wt <- wilcox.test(z$Acclimation, z$FMT1, paired = TRUE)
+  tibble(group = disp_lab[[ty]], metric = m, n_pairs = nrow(z), V = unname(wt$statistic), p = round(wt$p.value, 4))
+}))
+paired_dispersion %>% tt()
 ```
 
 ***NMDS***
@@ -1303,7 +1696,7 @@ significant_elements<-element_gift %>%
   select(-time_point, -type) %>%
   filter(rowSums(across(where(is.numeric), ~ . != 0)) > 0) %>%
   select(Tube_code, where( ~ is.numeric(.) && sum(.) > 0)) %>%
-  left_join(sample_metadata[c(1, 6)], by = "Tube_code") %>% 
+  left_join(sample_metadata[c("Tube_code", "type")], by = "Tube_code") %>% 
   pivot_longer(-c(Tube_code, type),
                names_to = "trait",
                values_to = "value") %>%
@@ -1321,7 +1714,7 @@ element_gift_sig <- element_gift %>%
     significant_elements$trait,
     colnames(element_gift)
   ))) %>%
-  left_join(., sample_metadata[c(1, 6)], by = join_by(Tube_code == Tube_code)) %>%
+  left_join(., sample_metadata[c("Tube_code", "type")], by = join_by(Tube_code == Tube_code)) %>%
   filter(type!="Warm_control")
 
 difference_table <- element_gift_sig %>%
@@ -1365,7 +1758,7 @@ element_gift %>%
   select(-time_point, -type) %>%
   filter(rowSums(across(where(is.numeric), ~ . != 0)) > 0) %>%
   select(Tube_code, where(~ is.numeric(.) && sum(.) > 0)) %>%
-  left_join(sample_metadata[c(1, 6)], by = "Tube_code") %>% 
+  left_join(sample_metadata[c("Tube_code", "type")], by = "Tube_code") %>% 
   pivot_longer(-c(Tube_code,type), names_to = "trait", values_to = "value") %>%
   group_by(trait) %>%
   summarise(p_value = wilcox.test(value ~ type)$p.value) %>%
@@ -1382,11 +1775,69 @@ element_gift %>%
   select(-time_point, -type) %>%
   filter(rowSums(across(where(is.numeric), ~ . != 0)) > 0) %>%
   select(Tube_code, where(~ is.numeric(.) && sum(.) > 0)) %>%
-  left_join(sample_metadata[c(1, 6)], by = "Tube_code") %>%
+  left_join(sample_metadata[c("Tube_code", "type")], by = "Tube_code") %>%
   pivot_longer(-c(Tube_code,type), names_to = "trait", values_to = "value") %>%
   group_by(trait) %>%
   summarise(p_value = wilcox.test(value ~ type)$p.value) %>%
   mutate(p_adjust=p.adjust(p_value, method="BH")) %>%
   filter(p_adjust < 0.05)%>%
   remove_rownames()
+```
+
+## Summary of functional trait counts cited in the manuscript
+
+Wilcoxon rank-sum test per trait (traits with at least one non-zero value in the compared samples), Benjamini-Hochberg adjusted across traits, significant at adjusted p < 0.05. This reproduces the counts and trait codes cited in the Results (`n_significant` and `traits`); `higher_in` is the group (or time-point) with the higher mean trait value.
+
+```{r functional_trait_counts_fmt, comment="", message=FALSE, warning=FALSE}
+trait_test <- function(filter_expr, group_var) {
+  element_gift %>%
+    filter({{ filter_expr }}) %>%
+    select(-time_point, -type) %>%
+    filter(rowSums(across(where(is.numeric), ~ . != 0)) > 0) %>%
+    select(Tube_code, where(~ is.numeric(.) && sum(.) > 0)) %>%
+    left_join(sample_metadata %>% select(Tube_code, type, time_point), by = "Tube_code") %>%
+    pivot_longer(-c(Tube_code, type, time_point), names_to = "trait", values_to = "value") %>%
+    group_by(trait) %>%
+    summarise(p_value = wilcox.test(value ~ .data[[group_var]])$p.value,
+              higher_in = names(which.max(tapply(value, .data[[group_var]], mean))), .groups = "drop") %>%
+    mutate(p_adjust = p.adjust(p_value, method = "BH")) %>%
+    filter(p_adjust < 0.05) %>%
+    left_join(uniqueGIFT_db, by = join_by("trait" == "Code_element"))
+}
+trait_sets <- list(
+  "CC: Acclimation vs FMT1" = trait_test(time_point %in% c("Acclimation", "FMT1") & type == "Cold_control", "time_point"),
+  "CI: Acclimation vs FMT1" = trait_test(time_point %in% c("Acclimation", "FMT1") & type == "Cold_intervention", "time_point"),
+  "WC: Acclimation vs FMT1" = trait_test(time_point %in% c("Acclimation", "FMT1") & type == "Warm_control", "time_point"),
+  "FMT1: CC vs CI" = trait_test(time_point == "FMT1" & type %in% c("Cold_control", "Cold_intervention"), "type"),
+  "FMT1: CI vs WC" = trait_test(time_point == "FMT1" & type %in% c("Cold_intervention", "Warm_control"), "type"),
+  "FMT1: CC vs WC" = trait_test(time_point == "FMT1" & type %in% c("Cold_control", "Warm_control"), "type"),
+  "FMT2: CC vs CI" = trait_test(time_point == "FMT2" & type %in% c("Cold_control", "Cold_intervention"), "type"),
+  "FMT2: CI vs WC" = trait_test(time_point == "FMT2" & type %in% c("Cold_intervention", "Warm_control"), "type"),
+  "FMT2: CC vs WC" = trait_test(time_point == "FMT2" & type %in% c("Cold_control", "Warm_control"), "type"))
+tibble(comparison = names(trait_sets),
+       n_significant = map_int(trait_sets, nrow),
+       traits = map_chr(trait_sets, ~ paste(.x$trait, collapse = ", "))) %>%
+  tt()
+```
+
+```{r functional_trait_lists_fmt, comment="", message=FALSE, warning=FALSE}
+trait_sets %>%
+  bind_rows(.id = "comparison") %>%
+  select(comparison, trait, higher_in, p_value, p_adjust, everything()) %>%
+  tt()
+```
+
+***Metabolic capacity index (MCI) at FMT1, warm-control vs cold-intervention only***
+
+The three-group ANOVA at FMT1 is given in the chunk `gitfs_functional_tm5_stats_2`; the manuscript reports the comparison between warm-control and cold-intervention.
+
+```{r mci_fmt1_ci_wc, comment="", message=FALSE, warning=FALSE}
+mci_fmt <- GIFTs_functions_community %>%
+  rowMeans() %>%
+  as_tibble(., rownames = "sample") %>%
+  left_join(sample_metadata, by = join_by(sample == Tube_code)) %>%
+  filter(time_point == "FMT1")
+summary(aov(value ~ type, data = mci_fmt))
+summary(aov(value ~ type, data = mci_fmt %>% filter(type %in% c("Warm_control", "Cold_intervention"))))
+t.test(value ~ type, data = mci_fmt %>% filter(type %in% c("Warm_control", "Cold_intervention")), var.equal = TRUE)
 ```

@@ -2,6 +2,7 @@
 
 ```{r load_data_mag}
 load("data/data_03122025.Rdata")
+load("data/03122025gifts.Rdata")
 ```
 
 ## Genome phylogeny
@@ -61,6 +62,26 @@ circular_tree <-  circular_tree +
 circular_tree %>% open_tree(30) %>% rotate_tree(90)
 ```
 
+## Catalogue summary
+
+```{r catalogue_summary, message=FALSE, warning=FALSE}
+# Manuscript: 313 MAGs, 15 phyla (Bacillota A 119, Bacteroidota 77, Pseudomonadota 34),
+# 36 annotated at species level (most Pseudomonadota, 33%), new species discovery rate over 88%.
+n_mags <- nrow(genome_metadata)
+cat("MAGs in catalogue:", n_mags, "\n")
+cat("Phyla:", n_distinct(genome_metadata$phylum), "\n")
+cat("MAGs per phylum:\n")
+genome_metadata %>% count(phylum, sort = TRUE) %>% as.data.frame() %>% print()
+
+# species-level annotation: GTDB species field other than the empty "s__"
+species_annotated <- genome_metadata %>% filter(species != "s__")
+cat("MAGs annotated at species level:", nrow(species_annotated), "\n")
+cat("Species-level annotated MAGs per phylum:\n")
+species_annotated %>% count(phylum, sort = TRUE) %>% mutate(percent = round(100 * n / nrow(species_annotated), 1)) %>% as.data.frame() %>% print()
+cat("New species (no species-level annotation):", n_mags - nrow(species_annotated), "\n")
+cat("New species discovery rate (%):", round(100 * (n_mags - nrow(species_annotated)) / n_mags, 2), "\n")
+```
+
 ## Genome quality
 
 ```{r genome_quality, message=FALSE, warning=FALSE}
@@ -72,6 +93,12 @@ genome_metadata %>%
     unite("Completeness",completeness_mean, completeness_sd, sep = " ± ", remove = TRUE) %>%
     unite("Contamination",contamination_mean, contamination_sd, sep = " ± ", remove = TRUE) %>%
     tt()
+```
+
+```{r genome_quality_text, message=FALSE, warning=FALSE}
+# Manuscript: completeness 92.99 +- 7.17 %, contamination 2.15 +- 2.19 % (mean +- sd over the 313 MAGs)
+cat("Completeness (mean +- sd):", round(mean(genome_metadata$completeness), 2), "+-", round(sd(genome_metadata$completeness), 2), "\n")
+cat("Contamination (mean +- sd):", round(mean(genome_metadata$contamination), 2), "+-", round(sd(genome_metadata$contamination), 2), "\n")
 ```
 
 ```{r genome_quality_plot, message=FALSE, warning=FALSE, fig.height=8, fig.width=10, fig.fullwidth=TRUE}
@@ -139,6 +166,18 @@ grid.arrange(grobs = list(genome_completeness,genome_biplot,genome_contamination
 
 ### Predicted genes
 ```{r predicted_stats_gut, message=FALSE, warning=FALSE}
+# genome_annotations is not stored in the .Rdata objects: read it from the raw annotation table
+# (same as 01_data_preparation.Rmd) and keep the MAGs of the catalogue
+if (!exists("genome_annotations")) {
+  genome_annotations_raw <- read_tsv("data/annotations.tsv.xz", show_col_types = FALSE) %>%
+    rename(gene = 1, genome = 2, contig = 3)
+  genes_raw_n <- nrow(genome_annotations_raw)                      # all MAGs before the 70% / 10% quality filter
+  genomes_raw_n <- n_distinct(genome_annotations_raw$genome)
+  genome_annotations <- genome_annotations_raw %>%
+    semi_join(genome_metadata, by = "genome")
+  rm(genome_annotations_raw)
+}
+
 # Predicted genes
 pred_genes <- genome_annotations %>%
   nrow()
@@ -168,8 +207,21 @@ kegg_annota <- genome_annotations %>%
   nrow()
 cat(kegg_annota)
 
-# KEGG annotation percentage
+# KEGG annotation percentage (of genes with any annotation)
 kegg_annota*100/genome_annota
+```
+
+```{r annotation_summary_text, message=FALSE, warning=FALSE}
+# Manuscript: 1,002,603 predicted genes, 930,700 (92.82%) with KEGG annotation
+# NOTE: the annotation table holds all dereplicated MAGs before the quality filter (completeness > 70%, contamination < 10%);
+# the genes of the 313 catalogue MAGs are a subset of it.
+if (exists("genes_raw_n")) cat("Predicted genes, annotation table before quality filter:", genes_raw_n, "genes in", genomes_raw_n, "MAGs\n")
+cat("Predicted genes, 313-MAG catalogue:", pred_genes, "\n")
+if (exists("genes_raw_n")) cat(sprintf("Catalogue genes as %% of the unfiltered table: %.2f%%\n", 100 * pred_genes / genes_raw_n))
+cat("Genes with any annotation (KO, Pfam or CAZy):", genome_annota, sprintf("(%.2f%% of predicted genes)", 100 * genome_annota / pred_genes), "\n")
+cat("Genes with KEGG (KO) annotation:", kegg_annota, "\n")
+cat(sprintf("KEGG as %% of predicted genes: %.2f\n", 100 * kegg_annota / pred_genes))
+cat(sprintf("KEGG as %% of annotated genes: %.2f\n", 100 * kegg_annota / genome_annota))
 ```
 
 ```{r function_heatmap, message=FALSE, warning=FALSE, fig.height=10, fig.width=10, fig.fullwidth=TRUE}

@@ -1,0 +1,25 @@
+comparison	metric	n	n_pairs	test	F	statistic	p	pairwise_p
+Wild: species	Richness	27	NA	betadisper permutest	0	F = 0	0.972	
+Wild: species	Neutral	27	NA	betadisper permutest	0	F = 0	0.946	
+Wild: species	Phylogenetic	27	NA	betadisper permutest	2.49	F = 2.49	0.122	
+Acclimation: species	Richness	26	NA	betadisper permutest	11.81	F = 11.81	0.002	
+Acclimation: species	Neutral	26	NA	betadisper permutest	4.19	F = 4.19	0.054	
+Acclimation: species	Phylogenetic	26	NA	betadisper permutest	2.31	F = 2.31	0.141	
+Antibiotics: species	Richness	23	NA	betadisper permutest	6.88	F = 6.88	0.016	
+Antibiotics: species	Neutral	23	NA	betadisper permutest	3.86	F = 3.86	0.066	
+Antibiotics: species	Phylogenetic	23	NA	betadisper permutest	0.99	F = 0.99	0.337	
+FMT1: experimental groups	Richness	26	NA	betadisper permutest	1.16	F = 1.16	0.345	CC–CI 0.655; CC–WC 0.045; CI–WC 0.449
+FMT1: experimental groups	Neutral	26	NA	betadisper permutest	0.14	F = 0.14	0.882	CC–CI 0.870; CC–WC 0.575; CI–WC 0.782
+FMT1: experimental groups	Phylogenetic	26	NA	betadisper permutest	0.12	F = 0.12	0.916	CC–CI 0.702; CC–WC 0.919; CI–WC 0.785
+FMT2: experimental groups	Richness	27	NA	betadisper permutest	0.26	F = 0.26	0.788	CC–CI 0.522; CC–WC 0.940; CI–WC 0.557
+FMT2: experimental groups	Neutral	27	NA	betadisper permutest	0.31	F = 0.31	0.736	CC–CI 0.647; CC–WC 0.752; CI–WC 0.463
+FMT2: experimental groups	Phylogenetic	27	NA	betadisper permutest	0.35	F = 0.35	0.713	CC–CI 0.604; CC–WC 0.799; CI–WC 0.423
+Acclimation vs FMT1: CC	Richness	17	8	paired Wilcoxon signed-rank on centroid distances	NA	V = 13	0.547	
+Acclimation vs FMT1: CC	Neutral	17	8	paired Wilcoxon signed-rank on centroid distances	NA	V = 14	0.641	
+Acclimation vs FMT1: CC	Phylogenetic	17	8	paired Wilcoxon signed-rank on centroid distances	NA	V = 22	0.641	
+Acclimation vs FMT1: CI	Richness	17	8	paired Wilcoxon signed-rank on centroid distances	NA	V = 23	0.547	
+Acclimation vs FMT1: CI	Neutral	17	8	paired Wilcoxon signed-rank on centroid distances	NA	V = 25	0.383	
+Acclimation vs FMT1: CI	Phylogenetic	17	8	paired Wilcoxon signed-rank on centroid distances	NA	V = 24	0.461	
+Acclimation vs FMT1: WC	Richness	18	9	paired Wilcoxon signed-rank on centroid distances	NA	V = 2	0.012	
+Acclimation vs FMT1: WC	Neutral	18	9	paired Wilcoxon signed-rank on centroid distances	NA	V = 10	0.164	
+Acclimation vs FMT1: WC	Phylogenetic	18	9	paired Wilcoxon signed-rank on centroid distances	NA	V = 25	0.82	

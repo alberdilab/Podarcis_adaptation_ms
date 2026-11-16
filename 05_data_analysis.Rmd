@@ -45,8 +45,10 @@ master_table <- sample_metadata %>%
 sample_metadata <- master_table %>% 
   select(1,2,3,4:8,10,12)
 
+# Select the sample identifier and ALL MAG columns by name (not by position: a
+# hard-coded 13:322 range silently dropped the last 3 of the 313 MAGs)
 genome_counts_filt <- master_table %>% 
-  select(12,13:322) %>% 
+  select(sample, all_of(setdiff(colnames(table), "sample"))) %>% 
   t() %>%
   row_to_names(row_number = 1) %>% 
   as.data.frame() %>% 
@@ -195,23 +197,28 @@ save(alpha_div,
 ### Beta diversity
 
 ```{r beta_div, comment="", message=FALSE, warning=FALSE, eval=FALSE}
-beta_q0n <- genome_counts_filt %>%
+counts_beta <- genome_counts_filt %>%
   column_to_rownames(., "genome") %>%
   filter(rowSums(. != 0, na.rm = TRUE) > 0) %>%
-  select_if(~!all(. == 0)) %>%
-  hillpair(., q = 0)
+  select_if(~!all(. == 0))
 
-beta_q1n <- genome_counts_filt %>%
-  column_to_rownames(., "genome") %>%
-  filter(rowSums(. != 0, na.rm = TRUE) > 0) %>%
-  select_if(~!all(. == 0)) %>%
-  hillpair(., q = 1)
+# hillpair() in recent hilldiv2 versions (2.0.5) returns dist objects without
+# sample labels (only the first label is kept, the rest are 2, 3, ...). The
+# distances follow the column order of the input, so labels are restored
+# explicitly; downstream chapters subset the matrices by sample name.
+label_hillpair <- function(h, samples) {
+  lapply(h, function(d) {
+    stopifnot(attr(d, "Size") == length(samples))
+    attr(d, "Labels") <- samples
+    d
+  })
+}
 
-beta_q1p <- genome_counts_filt %>%
-  column_to_rownames(., "genome") %>%
-  filter(rowSums(. != 0, na.rm = TRUE) > 0) %>%
-  select_if(~!all(. == 0)) %>%
-  hillpair(., q = 1, tree = genome_tree)
+beta_q0n <- hillpair(counts_beta, q = 0) %>% label_hillpair(colnames(counts_beta))
+
+beta_q1n <- hillpair(counts_beta, q = 1) %>% label_hillpair(colnames(counts_beta))
+
+beta_q1p <- hillpair(counts_beta, q = 1, tree = genome_tree) %>% label_hillpair(colnames(counts_beta))
 
 genome_gifts1 <- genome_gifts[genome_counts_filt$genome,]
 genome_gifts1 <- genome_gifts1[, colSums(genome_gifts1 != 0) > 0]

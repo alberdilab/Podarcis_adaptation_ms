@@ -42,9 +42,57 @@ data_stats_filter <- data_stats %>%
 ```
 
 ```{r reads_stats}
-data_stats_filter$raw_reads %>% sum()
-data_stats_filter$raw_reads %>% mean()
-data_stats_filter$raw_reads %>% sd()
+# Analysed samples only (the five excluded samples are not in data_stats; see reads_stats_all_samples)
+cat("Samples analysed:", nrow(data_stats_filter), "\n")
+cat("Raw reads, analysed samples, total:", sum(data_stats_filter$raw_reads), "\n")
+cat("Raw reads, analysed samples, mean per sample:", mean(data_stats_filter$raw_reads), "\n")
+cat("Raw reads, analysed samples, sd per sample:", sd(data_stats_filter$raw_reads), "\n")
+```
+
+```{r reads_stats_all_samples, message=FALSE, warning=FALSE}
+# All sequenced samples, i.e. including the five samples removed in 01_data_preparation.Rmd
+# (same procedure as in 01: read counts from data/multiqc_general_stats_2.txt, summed over lanes and read mates).
+# Manuscript: "4.7 billion sequencing reads from 167 faecal samples collected from 27 animals ... average of over 29 million reads per sample"
+excluded_samples <- c("AD91", "AC85", "AD16", "AD23", "AD25")
+raw_reads_all <- read_tsv("data/multiqc_general_stats_2.txt", show_col_types = FALSE) %>%
+  select(sample = Sample, raw_reads = total_sequences) %>%
+  mutate(sample = str_extract(sample, "^[^_]+")) %>%
+  group_by(sample) %>%
+  summarise(raw_reads = sum(raw_reads, na.rm = TRUE)) %>%
+  filter(sample %in% c(data_stats$sample, excluded_samples))
+
+cat("Samples sequenced (analysed + excluded):", nrow(raw_reads_all), "\n")
+cat("Samples excluded:", sum(raw_reads_all$sample %in% excluded_samples), "\n")
+cat("Samples analysed:", sum(!raw_reads_all$sample %in% excluded_samples), "\n")
+cat("Animals:", n_distinct(sample_metadata$individual[sample_metadata$time_point == "Wild"]), "\n")
+cat("Raw reads, all sequenced samples, total:", sum(raw_reads_all$raw_reads), "\n")
+cat("Raw reads, all sequenced samples, mean per sample:", mean(raw_reads_all$raw_reads), "\n")
+cat("Raw reads, all sequenced samples, median per sample:", median(raw_reads_all$raw_reads), "\n")
+```
+
+```{r excluded_samples_check, message=FALSE, warning=FALSE}
+# Check of the exclusion criteria stated in the manuscript (< 1M reads and singleM < 0.2 & DAMR < 0.3)
+# for the five excluded samples. singleM read fraction from data/singleM.tsv, MAG-mapped reads from data/contig.count.tsv.xz.
+singlem_all <- read_tsv("data/singleM.tsv", show_col_types = FALSE) %>%
+  distinct() %>%
+  mutate(sample = str_remove_all(sample, "_1$"),
+         singlem_read_fraction = as.numeric(str_remove(read_fraction, "%")) / 100,
+         sample = str_extract(sample, "^[^_]+")) %>%
+  group_by(sample) %>%
+  summarise(singlem_read_fraction = mean(singlem_read_fraction))
+mags_all <- read_tsv("data/contig.count.tsv.xz", show_col_types = FALSE) %>%
+  pivot_longer(-sequence_id) %>%
+  summarise(mapped_mags = sum(value), .by = "name") %>%
+  mutate(sample = str_extract(name, "^[^_]+")) %>%
+  group_by(sample) %>%
+  summarise(mapped_mags = sum(mapped_mags))
+raw_reads_all %>%
+  filter(sample %in% excluded_samples) %>%
+  left_join(singlem_all, by = "sample") %>%
+  left_join(mags_all, by = "sample") %>%
+  mutate(under_1M_reads = raw_reads < 1e6,
+         singlem_under_0.2 = singlem_read_fraction < 0.2) %>%
+  tt()
 ```
 
 ## DNA fractions

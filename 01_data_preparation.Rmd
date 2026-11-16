@@ -138,7 +138,7 @@ genome_coverage <- genome_hits %>%
 
 ## Filtering
 
-Two samples are removed from the analysis due to their low sequencing depth.
+Five samples are removed from the analysis after a preliminary data screening (see the `excluded_samples_check` chunk in `02_data_statistics.Rmd`): AD25 (very low sequencing depth, 56,658 raw reads), AC85 (low microbial read fraction, singleM = 0.185), AD16 (very low fraction of reads mapping to the MAG catalogue, 0.9%) and AD23 and AD91 (identical read and MAG-mapped counts, probable duplicate entries).
 
 ```{r filterging, echo=TRUE, warning=FALSE, eval=FALSE}
 #Counts_raw

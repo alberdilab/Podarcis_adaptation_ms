@@ -1,0 +1,13 @@
+MAGs in catalogue: 313; MAGs with >=2 eligible samples in source individual: 294
+Sample pairs evaluated: real 2685; artificial chimeras 11311 (848 chimeric bins)
+Dispersion index, real MAGs: median 0.91 (IQR 0.49-1.49)
+Dispersion index, artificial chimeras: median 2.24 (IQR 1.57-3.20); 5th percentile 0.76
+Real MAGs below chimera 5th percentile: 120 / 294 (40.8%)
+Real MAGs: share of max-pair dispersion above chimera median: 112
+Host association: median own/other mean rel. abundance ratio 4.5; MAGs with ratio>1: 290 / 312
+Host association: highest-abundance sample belongs to source individual for 136 / 312 MAGs (43.6%)
+Prevalence in own individual's samples median 1.00 vs other individuals 0.99
+Nearest-neighbour (other time point) is same individual: 45.7% (chance 3.7%)
+Matched time points: own-individual sample is closer than 68.3% of other individuals on average (chance 50%; n = 824 comparisons, not independent: see the per-individual test below; comparison-level Wilcoxon p = 8.2e-48); closest of all in 29.1%
+Matched time points, per individual (n = 27): mean 67.7%; 25 individuals above 50%; Wilcoxon signed-rank p = 2.8e-07
+PERMANOVA individual (all samples): R2 = 0.302, p = 0.000; (R2 inflated by 27 levels) FMT1+FMT2 only: R2 = 0.714, p = 0.000

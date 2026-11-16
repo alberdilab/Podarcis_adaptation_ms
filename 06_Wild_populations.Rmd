@@ -39,6 +39,22 @@ upset(as.data.frame(table_upset_analysis),
   mb.ratio = c(0.55, 0.45), order.by = "freq")
 ```
 
+```{r wild_mag_counts, comment="", message=FALSE, warning=FALSE}
+# MAGs detected (>0 reads) in wild samples per species, unique to each species and shared
+# (manuscript: 211 / 187 liolepis / muralis, 72 unique to muralis, 96 unique to liolepis, 115 shared, 30 undetected)
+tab_up <- as.data.frame(table_upset_analysis)
+cat("MAGs in catalogue:", nrow(genome_counts_filt), "\n")
+cat("Wild samples per species:\n"); print(table(subset_meta$species))
+cat("Detected in P. liolepis:", sum(tab_up$Podarcis_liolepis), "\n")
+cat("Detected in P. muralis:", sum(tab_up$Podarcis_muralis), "\n")
+cat("Unique to P. muralis (cold):", sum(tab_up$Podarcis_muralis == 1 & tab_up$Podarcis_liolepis == 0), "\n")
+cat("Unique to P. liolepis (warm):", sum(tab_up$Podarcis_muralis == 0 & tab_up$Podarcis_liolepis == 1), "\n")
+cat("Shared:", sum(tab_up$Podarcis_muralis == 1 & tab_up$Podarcis_liolepis == 1), "\n")
+cat("Detected in wild samples (total):", nrow(tab_up), "\n")
+cat("Not detected in wild samples:", nrow(genome_counts_filt) - nrow(tab_up), "\n")
+cat("Phyla among the MAGs detected in wild samples:", genome_metadata %>% filter(genome %in% rownames(tab_up)) %>% pull(phylum) %>% n_distinct(), "\n")
+```
+
 ## Shapiro test
 ```{r shapiro_wild, comment="", message=FALSE, warning=FALSE,}
 alpha_div %>%
@@ -103,6 +119,28 @@ alpha_div %>%
   ylab("Alpha diversity")
 ```
 
+```{r alpha_div_tests_wild, comment="", message=FALSE, warning=FALSE}
+# Species comparison of alpha diversity in wild samples. The figure uses the Welch t-test
+# (ggpubr default); Student t-test, variance test and Wilcoxon test are given for reference.
+# Manuscript: "similar alpha diversity" (t-test p = 0.38 / 0.72 / 0.40)
+alpha_wild <- alpha_div %>%
+  pivot_longer(-sample, names_to = "metric", values_to = "value") %>%
+  left_join(., sample_metadata, by = join_by(sample == Tube_code)) %>%
+  filter(time_point == "Wild")
+
+alpha_wild %>%
+  group_by(metric) %>%
+  summarise(n = n(),
+            shapiro_p = shapiro.test(value)$p.value,
+            var_test_p = var.test(value ~ species)$p.value,
+            welch_t = t.test(value ~ species)$statistic,
+            welch_p = t.test(value ~ species)$p.value,
+            student_p = t.test(value ~ species, var.equal = TRUE)$p.value,
+            wilcoxon_p = wilcox.test(value ~ species)$p.value) %>%
+  mutate(across(where(is.numeric), ~ signif(., 4))) %>%
+  tt()
+```
+
 ## Beta diversity
 
 ***Number of samples used***
@@ -117,18 +155,32 @@ subset_meta <- sample_metadata %>%
 length(samples_to_keep)
 ```
 
+```{r dispersion_helper_wild, warning=FALSE, comments="", message=FALSE}
+# Homogeneity of multivariate dispersion: betadisper + permutest, 9,999 permutations, set.seed(123).
+# Identical to supplementary_tables/table_S10_dispersion.R (same sample order, seed and call).
+disp_test <- function(beta_obj, meta, group) {
+  M <- as.matrix(beta_obj$S)
+  ids <- meta$Tube_code[meta$Tube_code %in% rownames(M)]
+  d <- as.dist(M[ids, ids])
+  dat <- meta[match(labels(d), meta$Tube_code), ]
+  set.seed(123)
+  permutest(betadisper(d, factor(dat[[group]])), pairwise = TRUE, permutations = 9999)
+}
+```
+
 ***Richness***
 ```{r beta_richness_permanova_1, warning=FALSE, comments="", message=FALSE}
 richness <- as.matrix(beta_q0n$S)
 richness <- as.dist(richness[rownames(richness) %in% samples_to_keep,
                colnames(richness) %in% samples_to_keep])
-betadisper(richness, subset_meta$species) %>% permutest(., pairwise = TRUE)
+disp_test(beta_q0n, subset_meta, "species")
 ```
 
 ```{r beta_richness_permanova, warning=FALSE, comments="", message=FALSE, results=TRUE}
+set.seed(123)
 adonis2(richness ~ species,
         data = subset_meta %>% arrange(match(Tube_code,labels(richness))),
-        permutations = 999) %>%
+        permutations = 9999) %>%
         broom::tidy() %>%
         tt()
 ```
@@ -138,13 +190,14 @@ adonis2(richness ~ species,
 neutral <- as.matrix(beta_q1n$S)
 neutral <- as.dist(neutral[rownames(neutral) %in% samples_to_keep,
                colnames(neutral) %in% samples_to_keep])
-betadisper(neutral, subset_meta$species) %>% permutest(., pairwise = TRUE)
+disp_test(beta_q1n, subset_meta, "species")
 ```
 
 ```{r beta_neutral_permanova, warning=FALSE, comments="", message=FALSE, results=TRUE}
+set.seed(123)
 adonis2(neutral ~ species,
         data = subset_meta %>% arrange(match(Tube_code,labels(neutral))),
-        permutations = 999) %>%
+        permutations = 9999) %>%
         broom::tidy() %>%
         tt()
 ```
@@ -154,13 +207,14 @@ adonis2(neutral ~ species,
 phylo <- as.matrix(beta_q1p$S)
 phylo <- as.dist(phylo[rownames(phylo) %in% samples_to_keep,
                colnames(phylo) %in% samples_to_keep])
-betadisper(phylo, subset_meta$species) %>% permutest(., pairwise = TRUE)
+disp_test(beta_q1p, subset_meta, "species")
 ```
 
 ```{r beta_phylo_permanova, warning=FALSE, comments="", message=FALSE, results=TRUE}
+set.seed(123)
 adonis2(phylo ~ species,
         data = subset_meta %>% arrange(match(Tube_code,labels(phylo))),
-        permutations = 999) %>%
+        permutations = 9999) %>%
         broom::tidy() %>%
         tt()
 ```
@@ -306,6 +360,20 @@ difference_table_wild <- element_gift_sig_wild %>%
   arrange(Function) %>%
   mutate(Difference = Podarcis_muralis - Podarcis_liolepis) %>%
   mutate(group_color = ifelse(Difference < 0, "Podarcis_liolepis", "Podarcis_muralis")) 
+```
+
+```{r wild_trait_counts, comment="", message=FALSE, warning=FALSE}
+# Functional traits (GIFT elements) differing between species in wild samples
+# (Wilcoxon test, Benjamini-Hochberg adjusted p < 0.05). Manuscript: 37 traits, 26 enriched in P. muralis (cold), 11 in P. liolepis (warm)
+cat("Traits tested:", ncol(element_gift_wild) - 2, "\n")
+cat("Significant traits (BH p < 0.05):", nrow(significant_elements_wild), "\n")
+cat("Enriched in P. muralis (cold-adapted):", sum(difference_table_wild$Difference > 0), "\n")
+cat("Enriched in P. liolepis (warm-adapted):", sum(difference_table_wild$Difference < 0), "\n")
+difference_table_wild %>%
+  select(Elements, Function, Difference, group_color) %>%
+  arrange(group_color, Function) %>%
+  mutate(Difference = round(Difference, 4)) %>%
+  tt()
 ```
 
 ```{r commun_wilcox_elem_plot_wild, comment="", message=FALSE, warning=FALSE, fig.height=6, fig.width=12, fig.fullwidth=TRUE}

@@ -17,14 +17,22 @@ dna_extraction_df<-dna_extraction %>%
 ```
 
 ```{r data_dna_extraction_model, comment="", message=FALSE, warning=FALSE, echo=FALSE}
+# DNA yield (Qubit, ng/ul) ~ time point (reference = Acclimation) + (1 | individual).
+# Estimate "time_point.xAntibiotics" = Antibiotics - Acclimation (a negative estimate is a LOWER DNA yield after antibiotics).
+# Manuscript statement: "lower DNA extraction yields (LMM ...)".
+# Two samples (AC85, AD31) have no match in the sample metadata and are dropped by the model (lmer na.action).
 model_dna<- lmerTest::lmer(dna_extraction ~ time_point.x+(1|individual), data = dna_extraction_df)
 summary(model_dna)
+cat("\nDNA yield: samples used =", nobs(model_dna), ", individuals =", lme4::ngrps(model_dna), "\n")
+cat("Mean DNA yield by time point:\n")
+dna_extraction_df %>% filter(!is.na(individual)) %>% group_by(time_point.x) %>% summarise(n = n(), mean = mean(dna_extraction), sd = sd(dna_extraction)) %>% print()
+summary(model_dna)$coefficients["time_point.xAntibiotics", ] %>% signif(4) %>% print()
 ```
 
 ## Bacterial fraction change
 
 ```{r data_bacterial_fraction, comment="", message=FALSE, warning=FALSE, echo=FALSE}
-mag_fragtion_accli_antib<-data_stats_filter %>%
+mag_fragtion_accli_antib<-data_stats %>%
   mutate(
     unmapped_reads = trimmed_reads - mapped_lizard - mapped_mags,
     mag_proportion = mapped_mags / (mapped_mags + unmapped_reads),
@@ -50,8 +58,34 @@ mag_fragtion_accli_antib<-data_stats_filter %>%
 ```
 
 ```{r data_bacterial_fraction_model, comment="", message=FALSE, warning=FALSE, echo=FALSE}
+# NOTE: this model is for the fraction of non-host reads that map to the MAG catalogue (mag_proportion = mapped_mags / (mapped_mags + unmapped non-host reads)),
+# i.e. the recovered MICROBIAL fraction, NOT the host fraction. It decreases after antibiotics (negative estimate).
+# The host DNA fraction is modelled in the next chunk (data_host_fraction_model).
 model_fraction<- lmerTest::lmer(value ~ time_point+(1|individual), data = mag_fragtion_accli_antib)
 summary(model_fraction)
+```
+
+```{r data_host_fraction_model, comment="", message=FALSE, warning=FALSE}
+# Host DNA fraction = reads mapped to the lizard genome / quality-filtered (trimmed) reads.
+# Model: fraction ~ time point (reference = Acclimation) + (1 | individual).
+# Estimate "time_pointAntibiotics" = Antibiotics - Acclimation (positive = HIGHER relative host DNA after antibiotics).
+# Manuscript statement: "higher relative fraction of host DNA in faeces (LMM ...)".
+host_fraction_df <- data_stats %>%
+  left_join(., sample_metadata, by = join_by(sample == Tube_code)) %>%
+  filter(time_point %in% c("Acclimation", "Antibiotics")) %>%
+  mutate(host_fraction = mapped_lizard / trimmed_reads,
+         mag_fraction_of_trimmed = mapped_mags / trimmed_reads)
+
+host_fraction_df %>%
+  group_by(time_point) %>%
+  summarise(n = n(), host_fraction_mean = mean(host_fraction), host_fraction_sd = sd(host_fraction),
+            mag_proportion_mean = mean(mag_fraction_of_trimmed)) %>%
+  print()
+
+model_host_fraction <- lmerTest::lmer(host_fraction ~ time_point + (1 | individual), data = host_fraction_df)
+summary(model_host_fraction)
+cat("\nHost fraction: samples used =", nobs(model_host_fraction), ", individuals =", lme4::ngrps(model_host_fraction), "\n")
+summary(model_host_fraction)$coefficients["time_pointAntibiotics", ] %>% signif(4) %>% print()
 ```
 
 
@@ -113,6 +147,27 @@ Model_phylo <- nlme::lme(fixed = phylogenetic ~ time_point*species, data = alpha
 summary(Model_phylo)
 ```
 
+***Contrasts within species (Antibiotics - Acclimation)***
+```{r alpha_antibiotics_contrasts, comment="", message=FALSE, warning=FALSE}
+# Post-hoc contrasts of the time_point x species models above (emmeans), Antibiotics - Acclimation within each species.
+# Negative estimate = lower diversity after antibiotics. Richness (glmer.nb) is on the log (link) scale; neutral and phylogenetic (lme) on the response scale.
+# Manuscript (P. muralis): richness est = -1.152, p = 6.02e-10; neutral est = -11.463, p = 6e-04; phylogenetic est = -0.761, p = 0.221.
+contrast_table <- function(model, metric) {
+  emmeans::emmeans(model, ~ time_point | species) %>%
+    emmeans::contrast(method = "revpairwise") %>%   # reference level order: Antibiotics - Acclimation
+    as.data.frame() %>%
+    mutate(metric = metric, .before = 1)
+}
+alpha_contrasts <- bind_rows(
+  contrast_table(Modelq0GLMMNB, "richness (log scale)"),
+  contrast_table(Model_neutral, "neutral"),
+  contrast_table(Model_phylo, "phylogenetic"))
+alpha_contrasts %>% print()
+alpha_contrasts %>%
+  mutate(across(where(is.numeric), ~ signif(., 4))) %>%
+  tt()
+```
+
 ## Beta diversity
 ```{r filter_data1, comment="", message=FALSE, warning=FALSE}
 samples_to_keep <- sample_metadata %>%
@@ -123,19 +178,37 @@ subset_meta <- sample_metadata %>%
   filter(time_point %in% c("Acclimation", "Antibiotics"))
 ```
 
+```{r dispersion_helper_antib, warning=FALSE, comments="", message=FALSE}
+# Homogeneity of multivariate dispersion: betadisper + permutest, 9,999 permutations, set.seed(123).
+# Identical to supplementary_tables/table_S10_dispersion.R (same sample order, seed and call).
+disp_test <- function(beta_obj, meta, group) {
+  M <- as.matrix(beta_obj$S)
+  ids <- meta$Tube_code[meta$Tube_code %in% rownames(M)]
+  d <- as.dist(M[ids, ids])
+  dat <- meta[match(labels(d), meta$Tube_code), ]
+  set.seed(123)
+  permutest(betadisper(d, factor(dat[[group]])), pairwise = TRUE, permutations = 9999)
+}
+```
+
 ***Richness***
 ```{r permanova_richness, comment="", message=FALSE, warning=FALSE}
 richness <- as.matrix(beta_q0n$S)
 richness <- as.dist(richness[rownames(richness) %in% samples_to_keep,
                colnames(richness) %in% samples_to_keep])
 
-betadisper(richness, subset_meta$time_point) %>% permutest(.) 
+disp_test(beta_q0n, subset_meta, "time_point")
 ```
 
 ```{r permanova_richness_adonis, comment="", message=FALSE, warning=FALSE}
+# NOTE: with strata = individual (and species constant within individual) this block CANNOT test `species`
+# (a between-individual term); only time_point and the interaction are meaningful, and the interaction is not
+# fully valid under raw-data permutations. The manuscript cites only the Antibiotics-only block further below.
+# The species effect is tested in the whole-plot chunk after the three blocks (permuting species labels across individuals).
+set.seed(123)
 adonis2(richness ~ time_point*species,
         data = subset_meta %>% arrange(match(Tube_code,labels(richness))),
-        permutations = 999,
+        permutations = 9999,
         strata = subset_meta %>% arrange(match(Tube_code,labels(richness))) %>% pull(individual),
         by="terms") %>%
         broom::tidy() %>%
@@ -148,13 +221,15 @@ neutral <- as.matrix(beta_q1n$S)
 neutral <- as.dist(neutral[rownames(neutral) %in% samples_to_keep,
                colnames(neutral) %in% samples_to_keep])
 
-betadisper(neutral, subset_meta$time_point) %>% permutest(.) 
+disp_test(beta_q1n, subset_meta, "time_point")
 ```
 
 ```{r permanova_neutral_adonis, comment="", message=FALSE, warning=FALSE}
+# (strata = individual: cannot test `species`; see comment in permanova_richness_adonis and chunk wholeplot_species_acc_antib)
+set.seed(123)
 adonis2(neutral ~ time_point*species,
         data = subset_meta %>% arrange(match(Tube_code,labels(neutral))),
-        permutations = 999,
+        permutations = 9999,
         strata = subset_meta %>% arrange(match(Tube_code,labels(neutral))) %>% pull(individual),
         by="terms") %>%
         broom::tidy() %>%
@@ -166,18 +241,48 @@ adonis2(neutral ~ time_point*species,
 phylo <- as.matrix(beta_q1p$S)
 phylo <- as.dist(phylo[rownames(phylo) %in% samples_to_keep,
                colnames(phylo) %in% samples_to_keep])
-betadisper(phylo, subset_meta$time_point) %>% permutest(.)
+disp_test(beta_q1p, subset_meta, "time_point")
 ```
 
 ```{r permanova_phylo_adonis, comment="", message=FALSE, warning=FALSE}
+# (strata = individual: cannot test `species`; see comment in permanova_richness_adonis and chunk wholeplot_species_acc_antib)
+set.seed(123)
 adonis2(phylo ~ time_point*species,
         data = subset_meta %>% arrange(match(Tube_code,labels(phylo))),
-        permutations = 999,
+        permutations = 9999,
         strata = subset_meta %>% arrange(match(Tube_code,labels(phylo))) %>% pull(individual),
         by="terms") %>%
         broom::tidy() %>%
         tt()
 ```
+
+***Whole-plot test of species (Acclimation + Antibiotics, repeated measures)***
+```{r wholeplot_species_acc_antib, comment="", message=FALSE, warning=FALSE}
+# Between-individual `species` effect after time_point: species labels are permuted across individuals (whole plots),
+# each individual keeping both of its time points. Euclidean embedding of the distances (positive eigenvalues only).
+wholeplot_species_test <- function(d, meta, nperm = 9999) {
+  meta <- as.data.frame(meta)[match(labels(d), meta$Tube_code), ]
+  pc <- suppressWarnings(cmdscale(d, k = attr(d, "Size") - 1, eig = TRUE))
+  Y <- pc$points[, pc$eig[seq_len(ncol(pc$points))] > 1e-8, drop = FALSE]; n <- nrow(Y)
+  ind <- factor(meta$individual); sp <- factor(meta$species)
+  ind_sp <- sp[match(levels(ind), meta$individual)]
+  Xt <- model.matrix(~ time_point, meta)
+  rss <- function(X) sum(qr.resid(qr(X), Y)^2)
+  Fsp <- function(s) {
+    X1 <- cbind(Xt, model.matrix(~ s[as.integer(ind)])[, -1, drop = FALSE])
+    r0 <- rss(Xt); r1 <- rss(X1); ((r0 - r1) / (ncol(X1) - ncol(Xt))) / (r1 / (n - ncol(X1)))
+  }
+  F_obs <- Fsp(ind_sp); set.seed(123)
+  Fp <- replicate(nperm, Fsp(sample(ind_sp)))
+  tibble(test = "Whole-plot species (after time_point)", n = n, n_individuals = nlevels(ind),
+         F = F_obs, p = (1 + sum(Fp >= F_obs - 1e-12)) / (1 + nperm))
+}
+bind_rows(Richness = wholeplot_species_test(richness, subset_meta),
+          Neutral = wholeplot_species_test(neutral, subset_meta),
+          Phylogenetic = wholeplot_species_test(phylo, subset_meta), .id = "metric") %>%
+  mutate(across(where(is.numeric), ~ signif(., 4))) %>% tt()
+```
+
 
 ***dbRDA***
 ```{r rda_accli_antib, comment="", message=FALSE, warning=FALSE}
@@ -397,13 +502,14 @@ richness <- as.matrix(beta_q0n$S)
 richness <- as.dist(richness[rownames(richness) %in% samples_to_keep,
                colnames(richness) %in% samples_to_keep])
 
-betadisper(richness, subset_meta$species) %>% permutest(.) 
+disp_test(beta_q0n, subset_meta, "species")
 ```
 
 ```{r permanova_rich1_adonis, comment="", message=FALSE, warning=FALSE}
+set.seed(123)
 adonis2(richness ~ species,
         data = subset_meta %>% arrange(match(Tube_code,labels(richness))),
-        permutations = 999) %>%
+        permutations = 9999) %>%
         broom::tidy() %>%
         tt()
 ```
@@ -414,13 +520,14 @@ neutral <- as.matrix(beta_q1n$S)
 neutral <- as.dist(neutral[rownames(neutral) %in% samples_to_keep,
                colnames(neutral) %in% samples_to_keep])
 
-betadisper(neutral, subset_meta$species) %>% permutest(.)
+disp_test(beta_q1n, subset_meta, "species")
 ```
 
 ```{r permanova_neutral1_adonis, comment="", message=FALSE, warning=FALSE}
+set.seed(123)
 adonis2(neutral ~ species,
         data = subset_meta %>% arrange(match(Tube_code,labels(neutral))),
-        permutations = 999) %>%
+        permutations = 9999) %>%
         broom::tidy() %>%
         tt()
 ```
@@ -430,12 +537,13 @@ adonis2(neutral ~ species,
 phylo <- as.matrix(beta_q1p$S)
 phylo <- as.dist(phylo[rownames(phylo) %in% samples_to_keep,
                colnames(phylo) %in% samples_to_keep])
-betadisper(phylo, subset_meta$species) %>% permutest(.) 
+disp_test(beta_q1p, subset_meta, "species")
 ```
 ```{r permanova_phylo1_adonis, comment="", message=FALSE, warning=FALSE}
+set.seed(123)
 adonis2(phylo ~ species,
         data = subset_meta %>% arrange(match(Tube_code,labels(phylo))),
-        permutations = 999) %>%
+        permutations = 9999) %>%
         broom::tidy() %>%
         tt()
 ```
