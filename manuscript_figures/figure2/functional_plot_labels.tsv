@@ -1,0 +1,36 @@
+trait	Function	function	label	colour
+B0219	Amino acid biosynthesis_GABA	Amino acid biosynthesis	GABA biosynthesis	#f79039
+B0213	Amino acid biosynthesis_Proline	Amino acid biosynthesis	Proline biosynthesis	#f79039
+B0216	Amino acid biosynthesis_Tryptophan	Amino acid biosynthesis	Tryptophan biosynthesis	#f79039
+D0503	Amino acid degradation_Cysteine	Amino acid degradation	Cysteine degradation	#c7e9a4
+D0518	Amino acid degradation_GABA	Amino acid degradation	GABA degradation	#c7e9a4
+D0508	Amino acid degradation_Lysine	Amino acid degradation	Lysine degradation	#c7e9a4
+D0517	Amino acid degradation_Ornithine	Amino acid degradation	Ornithine degradation	#c7e9a4
+B0302	Amino acid derivative biosynthesis_Betaine	Amino acid derivative biosynthesis	Betaine biosynthesis	#b5421a
+B0307	Amino acid derivative biosynthesis_Spermidine	Amino acid derivative biosynthesis	Spermidine biosynthesis	#b5421a
+B1012	Antibiotic biosynthesis_Fosfomycin	Antibiotic biosynthesis	Fosfomycin biosynthesis	#f5b3a0
+B0803	Aromatic compound biosynthesis_Chorismate	Aromatic compound biosynthesis	Chorismate biosynthesis	#d8359a
+B0801	Aromatic compound biosynthesis_Salicylate	Aromatic compound biosynthesis	Salicylate biosynthesis	#d8359a
+B0902	Metallophore biosynthesis_Aerobactin	Metallophore biosynthesis	Aerobactin biosynthesis	#ff7f9e
+D0604	Nitrogen compound degradation_GlcNAc	Nitrogen compound degradation	GlcNAc degradation	#2fa56b
+D0611	Nitrogen compound degradation_Phenylethylamine	Nitrogen compound degradation	Phenylethylamine degradation	#2fa56b
+D0603	Nitrogen compound degradation_Urate	Nitrogen compound degradation	Urate degradation	#2fa56b
+B0103	Nucleic acid biosynthesis_UDP/UTP	Nucleic acid biosynthesis	UDP/UTP biosynthesis	#f9c145
+B0102	Nucleic acid biosynthesis_Uridylic acid (UMP)	Nucleic acid biosynthesis	Uridylic acid (UMP) biosynthesis	#f9c145
+B0604	Organic anion biosynthesis_L-lactate	Organic anion biosynthesis	L-lactate biosynthesis	#d01040
+D0206	Polysaccharide degradation_Alpha galactan	Polysaccharide degradation	Alpha galactan degradation	#2a64ad
+D0212	Polysaccharide degradation_Arabinan	Polysaccharide degradation	Arabinan degradation	#2a64ad
+D0207	Polysaccharide degradation_Beta-galactan	Polysaccharide degradation	Beta-galactan degradation	#2a64ad
+D0204	Polysaccharide degradation_Chitin	Polysaccharide degradation	Chitin degradation	#2a64ad
+D0208	Polysaccharide degradation_Mixed-Linkage glucans	Polysaccharide degradation	Mixed-Linkage glucans degradation	#2a64ad
+D0213	Polysaccharide degradation_Mucin	Polysaccharide degradation	Mucin degradation	#2a64ad
+D0205	Polysaccharide degradation_Pectin	Polysaccharide degradation	Pectin degradation	#2a64ad
+D0203	Polysaccharide degradation_Starch	Polysaccharide degradation	Starch degradation	#2a64ad
+D0202	Polysaccharide degradation_Xyloglucan	Polysaccharide degradation	Xyloglucan degradation	#2a64ad
+D0304	Sugar degradation_D-Arabinose	Sugar degradation	D-Arabinose degradation	#62d4ea
+D0309	Sugar degradation_Galactose	Sugar degradation	Galactose degradation	#62d4ea
+D0307	Sugar degradation_L-Fucose	Sugar degradation	L-Fucose degradation	#62d4ea
+D0310	Sugar degradation_NeuAc	Sugar degradation	NeuAc degradation	#62d4ea
+D0302	Sugar degradation_Sucrose	Sugar degradation	Sucrose degradation	#62d4ea
+B0708	Vitamin biosynthesis_Cobalamin (B12)	Vitamin biosynthesis	Cobalamin (B12) biosynthesis	#7a1650
+B0705	Vitamin biosynthesis_Pyridoxal-P (B6)	Vitamin biosynthesis	Pyridoxal-P (B6) biosynthesis	#7a1650

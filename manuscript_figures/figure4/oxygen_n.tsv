@@ -1,0 +1,10 @@
+type	time_point	n
+WC	Acclimation	5
+WC	FMT1	7
+WC	FMT2	7
+CI	Acclimation	8
+CI	FMT1	6
+CI	FMT2	9
+CC	Acclimation	5
+CC	FMT1	5
+CC	FMT2	4
