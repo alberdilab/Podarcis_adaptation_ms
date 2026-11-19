@@ -23,7 +23,7 @@ respirometry_resp2<-respirometry_resp2 %>%
 ```
 
 
-#### Exclusions and sample sizes
+### Exclusions and sample sizes
 
 Oxygen consumption is expressed as mass-specific rate in ml O2 s^-1 g^-1 (`QC_normalized`; "s" = seconds). The models below do not apply a generic R2 > 0.8 cut-off: they use the hard-coded exclusions listed here (the same ones as `manuscript_figures/figure4/make_figure4.R`). Each rule is documented in the table; which observations are excluded has not been changed.
 

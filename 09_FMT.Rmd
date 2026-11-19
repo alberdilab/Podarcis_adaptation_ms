@@ -43,7 +43,7 @@ alpha_div_meta <- alpha_div %>%
   filter(time_point=="FMT1"|time_point=="Acclimation"|time_point=="FMT2") 
 ```
 
-***Richness***
+#### Richness
 ```{r alpha_div_data_post7_comparison, comment="", message=FALSE, warning=FALSE}
 Modelq0GLMMNB <- glmer.nb(richness ~ type*time_point+(1|individual), data = alpha_div_meta)
 summary(Modelq0GLMMNB)
@@ -51,7 +51,7 @@ emmeans::emmeans(Modelq0GLMMNB, pairwise ~ type)
 emmeans::emmeans(Modelq0GLMMNB, pairwise ~ time_point)
 ```
 
-***Neutral***
+#### Neutral
 ```{r alpha_div_data_1_post7_comparison, comment="", message=FALSE, warning=FALSE}
 Modelq1n <- nlme::lme(neutral ~ type*time_point, 
                random = ~ 1 | individual,
@@ -61,7 +61,7 @@ emmeans::emmeans(Modelq1n, pairwise ~ type)
 emmeans::emmeans(Modelq1n, pairwise ~ time_point)
 ```
 
-***Phylogenetic***
+#### Phylogenetic
 ```{r alpha_div_data_2_post7_comparison, comment="", message=FALSE, warning=FALSE}
 Model_phylo <- nlme::lme(phylogenetic ~ type*time_point, 
                random = ~ 1 | individual,
@@ -71,7 +71,7 @@ emmeans::emmeans(Model_phylo, pairwise ~ type)
 emmeans::emmeans(Model_phylo, pairwise ~ time_point)
 ```
 
-***Pairwise comparisons between time-points within each group***
+#### Pairwise comparisons between time-points within each group
 
 Post-hoc contrasts of the neutral diversity model (Tukey-adjusted p-values), used for the brackets in Figure 3a of the manuscript.
 
@@ -79,7 +79,7 @@ Post-hoc contrasts of the neutral diversity model (Tukey-adjusted p-values), use
 emmeans::emmeans(Modelq1n, pairwise ~ time_point | type, adjust = "tukey")$contrasts
 ```
 
-***Between-group contrasts at each time-point (Supplementary Table S8)***
+#### Between-group contrasts at each time-point (Supplementary Table S8)
 
 Estimated marginal means of the neutral diversity model (`Modelq1n`), compared between groups within each time-point, with Tukey adjustment over the three contrasts of each time-point. Groups in the data are `Cold_control` (CC, Control in the figure script), `Cold_intervention` (CI, Treatment) and `Warm_control` (WC, Hot_control). The table reports first minus second group in the order CC, CI, WC (CC - WC, CI - WC, CI - CC), i.e. the sign of the CC - CI contrast returned by `pairs()` is reversed. The last row is the unadjusted contrast between cold-intervention at FMT2 and warm-control at acclimation.
 
@@ -110,9 +110,9 @@ bind_rows(table_S8, last_row) %>%
   tt()
 ```
 
-#### Beta diversity
+### Beta diversity
 
-***Number of samples used***
+#### Number of samples used
 ```{r beta_div_neutral_all_samples_2_comparison, results = TRUE, message=FALSE, warning=FALSE, comments=FALSE}
 samples_to_keep_post7 <- sample_metadata %>%
   filter(time_point=="FMT1"|time_point=="Acclimation"|time_point=="FMT2") %>% 
@@ -126,7 +126,7 @@ subset_meta_post7$type<-as.factor(subset_meta_post7$type)
 length(samples_to_keep_post7)
 ```
 
-***Repeated-measures tests (same individuals at Acclimation, FMT1 and FMT2)***
+#### Repeated-measures tests (same individuals at Acclimation, FMT1 and FMT2)
 
 The legacy `adonis2(d ~ type*time_point, strata = individual)` calls below cannot test the between-individual `type` term and their within-individual permutations of raw data are anti-conservative for the interaction. The manuscript instead reports (i) the type x time_point interaction with a distance-based Freedman-Lane test (residuals of the reduced model `~ type + time_point` permuted within individual; the adonis2 R2 of the interaction is reported alongside) and (ii) the between-individual `type` effect with a whole-plot test (group labels permuted across individuals).
 
@@ -188,7 +188,7 @@ wholeplot_type_test <- function(d, meta, nperm = 9999) {
 }
 ```
 
-***Richness***
+#### Richness
 ```{r beta_richness_permanova_post7_2_comparison, warning=FALSE, comments="", message=FALSE}
 richness_post7 <- as.matrix(beta_q0n$S)
 richness_post7 <- as.dist(richness_post7[rownames(richness_post7) %in% samples_to_keep_post7,
@@ -210,7 +210,7 @@ adonis2(richness_post7 ~ type*time_point,
         tt()
 ```
 
-***Neutral***
+#### Neutral
 ```{r beta_neutral_permanova_post7_2_comparison, warning=FALSE, comments="", message=FALSE}
 neutral_post7 <- as.matrix(beta_q1n$S)
 neutral_post7 <- as.dist(neutral_post7[rownames(neutral_post7) %in% samples_to_keep_post7,
@@ -232,7 +232,7 @@ adonis2(neutral_post7 ~ type*time_point,
         tt()
 ```
 
-***Phylogenetic***
+#### Phylogenetic
 ```{r beta_phylo_permanova_post7_2_comparison, warning=FALSE, comments="", message=FALSE}
 phylo_post7 <- as.matrix(beta_q1p$S)
 phylo_post7 <- as.dist(phylo_post7[rownames(phylo_post7) %in% samples_to_keep_post7,
@@ -254,7 +254,7 @@ adonis2(phylo_post7 ~ type*time_point,
         tt()
 ```
 
-***Group x time (Freedman-Lane) and group (whole-plot) tests: reported in the manuscript***
+#### Group x time (Freedman-Lane) and group (whole-plot) tests: reported in the manuscript
 ```{r omnibus_group_by_time, warning=FALSE, comments="", message=FALSE}
 omni_dist <- list(Richness = richness_post7, Neutral = neutral_post7, Phylogenetic = phylo_post7)
 omni_meta <- subset_meta_post7
@@ -271,7 +271,7 @@ omni_res <- imap_dfr(omni_dist, function(d, m) {
 omni_res %>% mutate(across(where(is.numeric), ~ signif(., 4))) %>% tt()
 ```
 
-***dbRDA***
+#### dbRDA
 ```{r beta_neutral_nmds_post7_comparison, warning=FALSE, comments="", message=FALSE, results="hide"}
 #Richness
 cca_ord <- capscale(formula = richness_post7 ~ subset_meta_post7$time_point* subset_meta_post7$type)
@@ -420,7 +420,7 @@ ggarrange(beta_richness_nmds_post7, beta_neutral_nmds_post7, beta_phylogenetic_n
 beta_neutral_nmds_post7
 ```
 
-***Centroid trajectories (Figure 3b)***
+#### Centroid trajectories (Figure 3b)
 
 Group centroids are the mean dbRDA site scores of each experimental group at each time-point. In the manuscript figure the centroids are numbered (1, Acclimation; 2, FMT1; 3, FMT2) and joined by curved arrows that show the trajectory of each group.
 
@@ -436,7 +436,7 @@ vegan::scores(cca_neutral, display = "sites") %>%
   tt()
 ```
 
-***Manuscript Figure 3***
+#### Manuscript Figure 3
 
 Panels a and b of Figure 3 are drawn by `manuscript_figures/figure3/make_panels.R` (composed and exported with `manuscript_figures/figure3/build_figure3.py`), using the colour scheme of Figure 1.
 
@@ -459,7 +459,7 @@ load("data/beta_16092025.Rdata")
 
 ### Beta diversity
 
-***CI from acclimation to FMT1***
+#### CI from acclimation to FMT1
 ```{r beta_div_accli_fmt1_ci, comment="", message=FALSE, warning=FALSE}
 
 samples_to_keep <- sample_metadata %>%
@@ -532,7 +532,7 @@ adonis2(phylo ~ time_point,
 ```
 
 
-***CC from acclimation to FMT1***
+#### CC from acclimation to FMT1
 ```{r beta_div_accli_fmt1_cc, comment="", message=FALSE, warning=FALSE}
 
 samples_to_keep <- sample_metadata %>%
@@ -604,7 +604,7 @@ adonis2(phylo ~ time_point,
         tt()
 ```
 
-***WC from acclimation to FMT1***
+#### WC from acclimation to FMT1
 ```{r beta_div_accli_fmt1_wc, comment="", message=FALSE, warning=FALSE}
 
 samples_to_keep <- sample_metadata %>%
@@ -720,7 +720,7 @@ paired_trait_results <- bind_rows(
 paired_trait_results %>% mutate(across(where(is.numeric) & !c(n_paired, n_sig_paired_BH, n_sig_unpaired_BH_exploratory), ~ signif(., 3))) %>% tt()
 ```
 
-***CI from acclimation to FMT1***
+#### CI from acclimation to FMT1
 
 *Exploratory: the unpaired rank-sum tests and plots in this section treat samples as independent (see `paired_trait_tests_acc_fmt1` above for the paired tests).*
 
@@ -785,7 +785,7 @@ difference_table %>%
   ylab("Mean difference")
 ```
 
-***CC from acclimation to FMT1***
+#### CC from acclimation to FMT1
 
 ```{r comunity_elem_FMT3_cold, comment="", message=FALSE, warning=FALSE}
 significant_element<-element_gift %>%
@@ -848,7 +848,7 @@ difference_table %>%
   ylab("Mean difference")
 ```
 
-***WC from acclimation to FMT1***
+#### WC from acclimation to FMT1
 
 ```{r comunity_elem_FMT3_cold_2, comment="", message=FALSE, warning=FALSE}
 element_gift %>%
@@ -874,7 +874,7 @@ element_gift %>%
 
 *Exploratory: the unpaired rank-sum tests and plots below treat samples as independent; paired FMT1 vs FMT2 tests are in `paired_trait_tests_acc_fmt1`.*
 
-***CI from FMT1 to FMT2***
+#### CI from FMT1 to FMT2
 
 ```{r comunity_elem_FMT3_cold_6, comment="", message=FALSE, warning=FALSE}
 significant_element<-element_gift %>%
@@ -937,7 +937,7 @@ difference_table %>%
   ylab("Mean difference")
 ```
 
-***CC from FMT1 to FMT2***
+#### CC from FMT1 to FMT2
 
 ```{r comunity_elem_FMT3_cold_5, comment="", message=FALSE, warning=FALSE}
 element_gift %>%
@@ -957,7 +957,7 @@ element_gift %>%
   left_join(., uniqueGIFT_db, by=join_by("trait"=="Code_element"))
 ```
 
-***WC from FMT1 to FMT2***
+#### WC from FMT1 to FMT2
 
 ```{r comunity_elem_FMT3_cold_post6, comment="", message=FALSE, warning=FALSE}
 element_gift %>%
@@ -1048,7 +1048,7 @@ alpha_div %>%
 
 ### Beta diversity
 
-***Number of samples used***
+#### Number of samples used
 ```{r beta_div_neutral_treat1_samples_2, results = TRUE, message=FALSE, warning=FALSE, comments=FALSE}
 samples_to_keep_post1 <- sample_metadata %>%
   filter(time_point == "FMT1") %>% 
@@ -1059,7 +1059,7 @@ subset_meta_post1 <- sample_metadata %>%
 length(samples_to_keep_post1)
 ```
 
-***Richness***
+#### Richness
 ```{r beta_richness_permanova_post1_2, warning=FALSE, comments="", message=FALSE}
 richness_post1 <- as.matrix(beta_q0n$S)
 richness_post1 <- as.dist(richness_post1[rownames(richness_post1) %in% samples_to_keep_post1,
@@ -1087,7 +1087,7 @@ pairwise_FMT1_richness%>%
   tt()
 ```
 
-***Neutral***
+#### Neutral
 ```{r beta_neutral_permanova_post1_2, warning=FALSE, comments="", message=FALSE}
 neutral_post1 <- as.matrix(beta_q1n$S)
 neutral_post1 <- as.dist(neutral_post1[rownames(neutral_post1) %in% samples_to_keep_post1,
@@ -1114,7 +1114,7 @@ pairwise_FMT1_neutral%>%
   tt()
 ```
 
-***Phylogenetic***
+#### Phylogenetic
 ```{r beta_phylo_permanova_post1_2, warning=FALSE, comments="", message=FALSE}
 phylo_post1 <- as.matrix(beta_q1p$S)
 phylo_post1 <- as.dist(phylo_post1[rownames(phylo_post1) %in% samples_to_keep_post1,
@@ -1141,7 +1141,7 @@ pairwise_FMT1_phylo%>%
   tt()
 ```
 
-***Supplementary Table S1: pairwise PERMANOVA between the three groups at FMT1***
+#### Supplementary Table S1: pairwise PERMANOVA between the three groups at FMT1
 
 All values of Supplementary Table S1, in the layout of the table (rows CI vs CC, CI vs WC, CC vs WC within each metric). `pairwise.adonis` with 99,999 permutations, `set.seed(123)` set in the chunks above; `p.adjusted` is the Bonferroni correction across the three pairs within each metric.
 
@@ -1167,7 +1167,7 @@ table_S1 %>%
   tt()
 ```
 
-***NMDS***
+#### NMDS
 ```{r beta_neutral_nmds_post1, warning=FALSE, comments="", message=FALSE, results="hide"}
 richness_post1 %>%
 				metaMDS(.,trymax = 500, k=2, verbosity=FALSE, trace = FALSE) %>%
@@ -1230,8 +1230,8 @@ phylo_post1 %>%
 				theme(legend.position="none")
 ```
 
-#### Functional differences
-***MCI***
+### Functional differences
+#### MCI
 ```{r gitfs_elements_tm5, warning=FALSE, comments="", message=FALSE}
 GIFTs_functions_community %>%
   rowMeans() %>%
@@ -1255,7 +1255,7 @@ res.aov <- aov(value ~ type, data = MCI_tm5_ele)#anova test
 summary(res.aov)
 ```
 
-***Functional differences***
+#### Functional differences
 
 Cold-control and Cold-intervention
 ```{r comunity_elem_7_1, comment="", message=FALSE, warning=FALSE}
@@ -1381,7 +1381,7 @@ alpha_div %>%
 
 ### Beta diversity
 
-***Number of samples used***
+#### Number of samples used
 ```{r beta_div_neutral_FMT2, results = TRUE, message=FALSE, warning=FALSE, comments=FALSE}
 samples_to_keep_FMT2 <- sample_metadata %>%
   filter(time_point == "FMT2") %>% 
@@ -1392,7 +1392,7 @@ subset_meta_FMT2 <- sample_metadata %>%
 length(samples_to_keep_FMT2)
 ```
 
-***Richness***
+#### Richness
 ```{r beta_richness_permanova_FMT2_2, warning=FALSE, comments="", message=FALSE}
 richness_FMT2 <- as.matrix(beta_q0n$S)
 richness_FMT2 <- as.dist(richness_FMT2[rownames(richness_FMT2) %in% samples_to_keep_FMT2,
@@ -1420,7 +1420,7 @@ pairwise_FMT2_richness%>%
   tt()
 ```
 
-***Neutral***
+#### Neutral
 ```{r beta_neutral_permanova_FMT2_2, warning=FALSE, comments="", message=FALSE}
 neutral_FMT2 <- as.matrix(beta_q1n$S)
 neutral_FMT2 <- as.dist(neutral_FMT2[rownames(neutral_FMT2) %in% samples_to_keep_FMT2,
@@ -1447,7 +1447,7 @@ pairwise_FMT2_neutral%>%
   tt()
 ```
 
-***Phylogenetic***
+#### Phylogenetic
 ```{r beta_phylo_permanova_FMT2_2, warning=FALSE, comments="", message=FALSE}
 phylo_FMT2 <- as.matrix(beta_q1p$S)
 phylo_FMT2 <- as.dist(phylo_FMT2[rownames(phylo_FMT2) %in% samples_to_keep_FMT2,
@@ -1473,7 +1473,7 @@ pairwise_FMT2_phylo%>%
   tt()
 ```
 
-***Supplementary Table S2: pairwise PERMANOVA between the three groups at FMT2***
+#### Supplementary Table S2: pairwise PERMANOVA between the three groups at FMT2
 
 All values of Supplementary Table S2, in the layout of the table (rows CI vs CC, CI vs WC, CC vs WC within each metric). `pairwise.adonis` with 99,999 permutations, `set.seed(123)` set in the chunks above; `p.adjusted` is the Bonferroni correction across the three pairs within each metric.
 
@@ -1499,7 +1499,7 @@ table_S2 %>%
   tt()
 ```
 
-***Is the cold-intervention group closer to the warm-control (donor) group than the cold-control group at FMT1?***
+#### Is the cold-intervention group closer to the warm-control (donor) group than the cold-control group at FMT1?
 
 For each FMT1 sample of the cold-control and cold-intervention groups, the mean dissimilarity to all warm-control FMT1 samples is computed (neutral q = 1 dissimilarity, `beta_q1n$S`; richness `beta_q0n$S` and phylogenetic `beta_q1p$S` for completeness) and the two groups are compared with a Wilcoxon rank-sum test (normal approximation, `exact = FALSE`, because of ties/size).
 
@@ -1529,7 +1529,7 @@ distance_tests_fmt1 %>%
   tt()
 ```
 
-***Mean dissimilarity between groups (neutral, q = 1)***
+#### Mean dissimilarity between groups (neutral, q = 1)
 
 Mean of all between-sample neutral dissimilarities of each pair of groups at FMT1 and FMT2 (dbRDA centroids are given in chunk `dbrda_centroid_trajectories`). These values support the Discussion statements about the cold-intervention group moving towards, and then away from, the donor (warm-control) community.
 
@@ -1548,7 +1548,7 @@ expand_grid(time_point = c("FMT1", "FMT2"),
   tt()
 ```
 
-***Dispersion tests (Supplementary Table S10 rows for FMT1, FMT2 and acclimation vs FMT1)***
+#### Dispersion tests (Supplementary Table S10 rows for FMT1, FMT2 and acclimation vs FMT1)
 
 Same tests as in `supplementary_tables/table_S10_dispersion.R` (betadisper + permutest, 9,999 permutations, `set.seed(123)` before each call), collected in one table: global F and p, and unadjusted pairwise permuted p-values for the three-group comparisons.
 
@@ -1599,7 +1599,7 @@ paired_dispersion <- map_dfr(names(disp_lab), function(ty) map_dfr(names(disp_me
 paired_dispersion %>% tt()
 ```
 
-***NMDS***
+#### NMDS
 ```{r beta_neutral_nmds_FMT2, warning=FALSE, comments="", message=FALSE, results="hide"}
  richness_FMT2 %>%
 				metaMDS(.,trymax = 500, k=2, verbosity=FALSE, trace = FALSE) %>%
@@ -1662,8 +1662,8 @@ phylo_FMT2 %>%
 				theme(legend.position="none")
 ```
 
-#### Functional differences
-***MCI***
+### Functional differences
+#### MCI
 ```{r gitfs_elements_tm5_FMT2_cold, warning=FALSE, comments="", message=FALSE}
 GIFTs_functions_community %>%
   rowMeans() %>%
@@ -1687,7 +1687,7 @@ res.aov <- aov(value ~ type, data = MCI_FMT2)
 summary(res.aov)
 ```
 
-***Functional differences***
+#### Functional differences
 
 Cold-control and Cold-intervention
 ```{r comunity_elem_FMT2_cold, comment="", message=FALSE, warning=FALSE}
@@ -1827,7 +1827,7 @@ trait_sets %>%
   tt()
 ```
 
-***Metabolic capacity index (MCI) at FMT1, warm-control vs cold-intervention only***
+### Metabolic capacity index (MCI) at FMT1, warm-control vs cold-intervention only
 
 The three-group ANOVA at FMT1 is given in the chunk `gitfs_functional_tm5_stats_2`; the manuscript reports the comparison between warm-control and cold-intervention.
 

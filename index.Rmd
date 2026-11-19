@@ -2,16 +2,16 @@
 title: "AlberdiLab | Martin-Bideguren et al. 2026"
 subtitle: "Interspecific faecal microbiota transplantation reshapes the gut microbiome of lizards but yields inconclusive effects on thermal physiology"
 author:
-  - Garazi Martin-Bideguren^[University of Copenhagen, garazi.bideguren@sund.ku.dk],Carlos Cabido^[Sociedad de Ciencias Aranzadi-Departamento de Herpetología, ccabido@aranzadi.eus], Kevin Kohl^[University of Pittsburgh, kkohl78@gmail.com],Antton Alberdi^[University of Copenhagen, antton.alberdi@sund.ku.dk] and Ostaizka Aizpurua^[University of Copenhagen, ostaizka.aizpurua@sund.ku.dk]
+  - Garazi Martin-Bideguren^[University of Copenhagen, garazi.bideguren@sund.ku.dk], Carlos Cabido^[Aranzadi Science Society-Department of Herpetology, ccabido@aranzadi.eus], Kevin Kohl^[University of Pittsburgh, kkohl78@gmail.com],Antton Alberdi^[University of Copenhagen, antton.alberdi@sund.ku.dk] and Ostaizka Aizpurua^[University of Copenhagen, ostaizka.aizpurua@sund.ku.dk]
 date: "Last update: `r Sys.Date()`"
 site: bookdown::bookdown_site
 documentclass: book
 bibliography: [book.bib, packages.bib]
-url: https://alberdilab.github.io/Podarcis_adaptation_ms
+url: https://alberdilab.github.io/podarcis_fmt_temperature
 description: |
   Data analysis code for the study on the recovery of metagenome‑assembled genomes and derived microbial communities from lizard faecal samples.
 link-citations: yes
-github-repo: alberdilab/Podarcis_adaptation_ms
+github-repo: alberdilab/podarcis_fmt_temperature
 ---
 
 ```{r knitr_opts, echo=FALSE}
@@ -37,7 +37,7 @@ RStudio > New Project > Version Control > Git
 
 And indicating the following git repository:
 
-> https://github.com/alberdilab/Podarcis_adaptation_ms.git
+> https://github.com/alberdilab/podarcis_fmt_temperature.git
 
 Once the R project has been created, follow the instructions and code chunks shown in this webbook.
 
